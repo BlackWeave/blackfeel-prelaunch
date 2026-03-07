@@ -24,8 +24,12 @@ h1, h2, h3, .serif {
 ::-webkit-scrollbar-thumb:hover { background: #555; }
 
 /* T-Shirt Base Image Styles */
+/* T-Shirt Base Image Styles */
 .tshirt-base {
     transition: opacity 0.3s ease;
+    transform: scale(1.15); /* Dialed back from 1.35 */
+    transform-origin: center center; /* Centers the scale perfectly */
+    object-fit: contain; /* Ensures the whole shirt stays in frame */
 }
 
 /* Drag & Resize Interactions */

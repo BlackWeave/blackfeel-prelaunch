@@ -8,13 +8,8 @@ const state = {
     generationsLeft: 5,
     currentDesign: null,
     currentTshirtColor: '#1a1a1a',
-    history: [],
-    drag: {
-        isDragging: false,
-        isResizing: false,
-        startX: 0,
-        startY: 0
-    }
+    history: []
+    // Removed the clunky manual drag state
 };
 
 // --- DOM Elements ---
@@ -52,6 +47,7 @@ const DOM = {
 // --- Initialization ---
 async function init() {
     setupEventListeners();
+    initInteractJS(); // Initialize the new drag engine
     
     if (state.token) {
         await checkAuth();
@@ -99,16 +95,8 @@ function setupEventListeners() {
     // Generate button
     DOM.generateBtn.addEventListener('click', generateDesign);
     
-    // Drag and resize
-    DOM.designWrapper.addEventListener('mousedown', handleDragStart);
-    DOM.resizeHandle.addEventListener('mousedown', handleResizeStart);
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-    
-    // Touch support
-    DOM.designWrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleEnd);
+    // Note: Manual drag and resize listeners have been removed from here
+    // as Interact.js now handles the heavy lifting!
 }
 
 // --- Authentication Functions ---
@@ -135,16 +123,16 @@ async function checkAuth() {
 }
 
 function showAuthModal() {
-    DOM.authModal.classList.remove('hidden');
+    if(DOM.authModal) DOM.authModal.classList.remove('hidden');
 }
 
 function hideAuthModal() {
-    DOM.authModal.classList.add('hidden');
+    if(DOM.authModal) DOM.authModal.classList.add('hidden');
 }
 
 function showApp() {
     hideAuthModal();
-    DOM.logoutBtn.classList.remove('hidden');
+    if(DOM.logoutBtn) DOM.logoutBtn.classList.remove('hidden');
     updateUI();
 }
 
@@ -230,8 +218,10 @@ function handleLogout() {
 }
 
 function showAuthError(message) {
-    DOM.authError.textContent = message;
-    DOM.authError.classList.remove('hidden');
+    if(DOM.authError) {
+        DOM.authError.textContent = message;
+        DOM.authError.classList.remove('hidden');
+    }
 }
 
 function updateUI() {
@@ -318,12 +308,14 @@ function handleNewDesign(url, promptText, data) {
     state.history.unshift(newDesign);
     if (state.history.length > 5) state.history.pop();
     
-    state.generationsLeft = data.generationsLeft;
-    DOM.rateLimitDisplay.textContent = state.generationsLeft;
-    
-    if (state.generationsLeft <= 0) {
-        DOM.generateBtn.disabled = true;
-        DOM.generateBtn.querySelector('span').textContent = 'Limit Reached';
+    if (data && data.generationsLeft !== undefined) {
+        state.generationsLeft = data.generationsLeft;
+        DOM.rateLimitDisplay.textContent = state.generationsLeft;
+        
+        if (state.generationsLeft <= 0) {
+            DOM.generateBtn.disabled = true;
+            DOM.generateBtn.querySelector('span').textContent = 'Limit Reached';
+        }
     }
     
     renderHistory();
@@ -369,8 +361,10 @@ async function loadHistory() {
         if (response.ok) {
             const data = await response.json();
             state.history = data.designs || [];
-            state.generationsLeft = 5 - data.generationsUsed;
-            DOM.rateLimitDisplay.textContent = state.generationsLeft;
+            if(data.generationsUsed !== undefined) {
+                state.generationsLeft = 5 - data.generationsUsed;
+                DOM.rateLimitDisplay.textContent = state.generationsLeft;
+            }
             
             if (state.history.length > 0) {
                 renderHistory();
@@ -381,83 +375,88 @@ async function loadHistory() {
     }
 }
 
-// --- Drag & Resize Engine ---
+// --- Professional Drag & Resize Engine (Interact.js) ---
+
+function initInteractJS() {
+    if (!state.currentDesign) {
+        state.currentDesign = { x: 0, y: 0, scale: 1 };
+    }
+
+    interact('#design-wrapper')
+        .draggable({
+            inertia: true, // Smooth glide
+            modifiers: [
+                interact.modifiers.restrictRect({
+                    restriction: 'parent', // Stays inside the container
+                    endOnly: true
+                })
+            ],
+            autoScroll: true,
+            listeners: {
+                move: dragMoveListener,
+            }
+        });
+
+    // Handle custom resize handle
+    DOM.resizeHandle.addEventListener('mousedown', initResize);
+    DOM.resizeHandle.addEventListener('touchstart', initResize, { passive: false });
+}
+
+// Global resize state
+let startY = 0;
+let startScale = 1;
+
+function initResize(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    startY = e.clientY || (e.touches && e.touches[0].clientY);
+    startScale = state.currentDesign.scale || 1;
+    
+    window.addEventListener('mousemove', resizeMoveListener);
+    window.addEventListener('touchmove', resizeMoveListener, { passive: false });
+    window.addEventListener('mouseup', stopResize);
+    window.addEventListener('touchend', stopResize);
+}
+
+function resizeMoveListener(e) {
+    e.preventDefault();
+    if (!state.currentDesign) return;
+    
+    const currentY = e.clientY || (e.touches && e.touches[0].clientY);
+    const deltaY = startY - currentY; 
+    let newScale = startScale + (deltaY * 0.01);
+    
+    // Constrain scale
+    newScale = Math.max(0.3, Math.min(newScale, 2.5));
+    
+    applyTransform(state.currentDesign.x, state.currentDesign.y, newScale);
+}
+
+function stopResize() {
+    window.removeEventListener('mousemove', resizeMoveListener);
+    window.removeEventListener('touchmove', resizeMoveListener);
+    window.removeEventListener('mouseup', stopResize);
+    window.removeEventListener('touchend', stopResize);
+}
+
+function dragMoveListener(event) {
+    if (!state.currentDesign) return;
+    
+    const scale = state.currentDesign.scale || 1;
+    state.currentDesign.x += (event.dx / scale);
+    state.currentDesign.y += (event.dy / scale);
+
+    applyTransform(state.currentDesign.x, state.currentDesign.y, scale);
+}
+
 function applyTransform(x, y, scale) {
-    DOM.designWrapper.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
     if (state.currentDesign) {
         state.currentDesign.x = x;
         state.currentDesign.y = y;
         state.currentDesign.scale = scale;
     }
-}
-
-function handleDragStart(e) {
-    if (e.target === DOM.resizeHandle) return;
-    state.drag.isDragging = true;
-    state.drag.startX = e.clientX - state.currentDesign.x;
-    state.drag.startY = e.clientY - state.currentDesign.y;
-    e.preventDefault();
-}
-
-function handleResizeStart(e) {
-    state.drag.isResizing = true;
-    state.drag.startX = e.clientX;
-    state.drag.startY = e.clientY;
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-function handleMove(e) {
-    if (!state.currentDesign) return;
-    
-    if (state.drag.isDragging) {
-        const newX = e.clientX - state.drag.startX;
-        const newY = e.clientY - state.drag.startY;
-        applyTransform(newX, newY, state.currentDesign.scale);
-    } else if (state.drag.isResizing) {
-        const dx = e.clientX - state.drag.startX;
-        const dy = e.clientY - state.drag.startY;
-        const delta = (dx + dy) / 2;
-        let newScale = state.currentDesign.scale + (delta * 0.005);
-        newScale = Math.max(0.3, Math.min(newScale, 2.5));
-        applyTransform(state.currentDesign.x, state.currentDesign.y, newScale);
-    }
-}
-
-function handleTouchStart(e) {
-    if (e.target === DOM.resizeHandle) {
-        state.drag.isResizing = true;
-        state.drag.startX = e.touches[0].clientX;
-        state.drag.startY = e.touches[0].clientY;
-    } else {
-        state.drag.isDragging = true;
-        state.drag.startX = e.touches[0].clientX - state.currentDesign.x;
-        state.drag.startY = e.touches[0].clientY - state.currentDesign.y;
-    }
-    e.preventDefault();
-}
-
-function handleTouchMove(e) {
-    if (!state.currentDesign) return;
-    
-    if (state.drag.isDragging) {
-        const newX = e.touches[0].clientX - state.drag.startX;
-        const newY = e.touches[0].clientY - state.drag.startY;
-        applyTransform(newX, newY, state.currentDesign.scale);
-    } else if (state.drag.isResizing) {
-        const dx = e.touches[0].clientX - state.drag.startX;
-        const dy = e.touches[0].clientY - state.drag.startY;
-        const delta = (dx + dy) / 2;
-        let newScale = state.currentDesign.scale + (delta * 0.005);
-        newScale = Math.max(0.3, Math.min(newScale, 2.5));
-        applyTransform(state.currentDesign.x, state.currentDesign.y, newScale);
-    }
-    e.preventDefault();
-}
-
-function handleEnd() {
-    state.drag.isDragging = false;
-    state.drag.isResizing = false;
+    // Using translate3d forces GPU rendering for butter-smooth movement
+    DOM.designWrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
 }
 
 // Start the app

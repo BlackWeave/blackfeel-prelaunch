@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import { db } from '../models/database.js';
 import { openRouterService } from '../services/openRouter.js';
 import { imageStorage } from '../services/imageStorage.js';
+import { removeBgService } from '../services/removeBg.js';
 
 const router = express.Router();
 
@@ -38,6 +39,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
         // Generate image with OpenRouter (Gemini 2.5 Flash Image)
         console.log('✨ Generating image with Gemini 2.5 via OpenRouter for prompt:', prompt);
         const base64DataUrl = await openRouterService.generateImage(prompt);
+        const transparentBase64 = await removeBgService.process(base64DataUrl);
 
         if (!base64DataUrl) {
             return res.status(500).json({ error: 'Failed to generate image' });
@@ -45,7 +47,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
 
         // Upload Base64 directly to R2
         console.log('☁️ Optimizing and uploading to Cloudflare R2...');
-        const uploadedUrl = await imageStorage.uploadBase64(base64DataUrl, 'designs');
+        const uploadedUrl = await imageStorage.uploadBase64(transparentBase64, 'designs');
 
         // Save design to database
         const design = await db.createDesign(
