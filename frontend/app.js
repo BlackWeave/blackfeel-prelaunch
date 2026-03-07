@@ -297,7 +297,8 @@ function setLoadingState(isLoading) {
 // --- History & Canvas Logic ---
 function handleNewDesign(url, promptText, data) {
     const newDesign = {
-        id: Date.now(),
+        // FIX: Use the actual UUID from the database instead of Date.now()
+        id: data.designId, 
         url: url,
         prompt: promptText,
         scale: 1,
@@ -330,8 +331,16 @@ function loadDesignToCanvas(design) {
 }
 
 function restoreFromHistory(id) {
+    // This will now correctly match the UUID strings from the database
     const design = state.history.find(d => d.id === id);
-    if (design) loadDesignToCanvas(design);
+    if (design) {
+        // Normalize the URL if it's coming from the database
+        const normalizedDesign = {
+            ...design,
+            url: design.url || design.processed_image_url
+        };
+        loadDesignToCanvas(normalizedDesign);
+    }
 }
 
 function renderHistory() {
@@ -341,10 +350,13 @@ function renderHistory() {
     state.history.forEach(item => {
         const div = document.createElement('div');
         div.className = 'aspect-square rounded overflow-hidden cursor-pointer border border-white/10 hover:border-yellow-600 transition-colors';
+        
+        // Use the ID from the database for the click handler
         div.onclick = () => restoreFromHistory(item.id);
         
         const img = document.createElement('img');
-        img.src = item.url;
+        // Handle both local state and database state property names
+        img.src = item.url || item.processed_image_url; 
         img.className = 'w-full h-full object-cover';
         
         div.appendChild(img);
