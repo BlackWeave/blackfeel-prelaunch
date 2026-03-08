@@ -37,9 +37,9 @@ const DOM = {
     generateBtn: document.getElementById('generate-btn'),
     btnLoader: document.getElementById('btn-loader'),
     rateLimitDisplay: document.getElementById('rate-limit-display'),
-    designWrapper: document.getElementById('design-wrapper'),
+    designWrapper: document.getElementById('generated-image-container'),
     generatedImage: document.getElementById('generated-image'),
-    resizeHandle: document.getElementById('resize-handle'),
+    resizeHandle: document.getElementById('resize-handle'), // Restored
     buyNowBtn: document.getElementById('buy-now-btn'),
     
     // Archives Modal
@@ -60,7 +60,7 @@ const DOM = {
 // --- Initialization ---
 async function init() {
     setupEventListeners();
-    initInteractJS();
+    initInteractJS(); // Restored interact.js initialization
 
     if (state.token) {
         await checkAuth();
@@ -129,6 +129,10 @@ function setupEventListeners() {
                 DOM.tshirtImg.style.opacity = 1;
             }, 150);
 
+            // Manage active state manually for CSS rings
+            DOM.colorBtns.forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+
             const colorMap = {
                 'assets/black-tshirt.png': '#1a1a1a',
                 'assets/white-tshirt.png': '#f5f5f5',
@@ -143,7 +147,9 @@ function setupEventListeners() {
     DOM.generateBtn.addEventListener('click', generateDesign);
     
     // Buy Now button
-    DOM.buyNowBtn.addEventListener('click', handleBuyNow);
+    if(DOM.buyNowBtn) {
+        DOM.buyNowBtn.addEventListener('click', handleBuyNow);
+    }
 }
 
 // --- Authentication Functions ---
@@ -310,54 +316,50 @@ function renderOrders(orders) {
         });
 
         const statusColors = {
-            'draft': 'bg-gray-500/20 text-gray-400',
-            'payment_pending': 'bg-yellow-500/20 text-yellow-500',
-            'paid': 'bg-green-500/20 text-green-500',
-            'production': 'bg-blue-500/20 text-blue-500',
-            'shipped': 'bg-indigo-500/20 text-indigo-500',
-            'delivered': 'bg-green-600/20 text-green-400'
+            'draft': 'background: rgba(107, 114, 128, 0.2); color: #9ca3af;',
+            'payment_pending': 'background: rgba(234, 179, 8, 0.2); color: #eab308;',
+            'paid': 'background: rgba(34, 197, 94, 0.2); color: #22c55e;',
+            'production': 'background: rgba(59, 130, 246, 0.2); color: #3b82f6;',
+            'shipped': 'background: rgba(99, 102, 241, 0.2); color: #6366f1;',
+            'delivered': 'background: rgba(22, 163, 74, 0.2); color: #4ade80;'
         };
 
         const statusLabel = order.status.replace('_', ' ').toUpperCase();
         
-        // Use finalized_image_url (full mockup) or processed_image_url (transparent design)
         let displayImageUrl = order.finalized_image_url || order.processed_image_url;
-        
-        // Ensure URL is valid and absolute
         if (displayImageUrl && !displayImageUrl.startsWith('http')) {
-            // Fallback for relative paths if any
             displayImageUrl = displayImageUrl.startsWith('/') ? displayImageUrl : `/${displayImageUrl}`;
         }
 
         const orderCard = document.createElement('div');
-        orderCard.className = 'bg-[#1a1a1a] border border-white/10 rounded-lg overflow-hidden flex flex-col md:flex-row min-h-[120px]';
+        orderCard.style.cssText = 'background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; display: flex; flex-direction: row; min-height: 120px; margin-bottom: 12px;';
         
         orderCard.innerHTML = `
-            <div class="w-full md:w-32 bg-[#0f0f0f] flex items-center justify-center p-2 shrink-0">
+            <div style="width: 120px; background: #e5e7eb; display: flex; align-items: center; justify-content: center; padding: 8px; flex-shrink: 0;">
                 ${displayImageUrl ? 
                     `<img src="${displayImageUrl}" 
-                          class="max-w-full max-h-full object-contain drop-shadow-lg" 
+                          style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));" 
                           alt="Order Design"
                           onerror="this.src='assets/black-tshirt.png'; this.style.opacity='0.5';">` : 
-                    `<div class="w-full h-full bg-gray-800 flex items-center justify-center text-[10px] text-gray-500">NO IMAGE</div>`
+                    `<div style="width: 100%; height: 100%; background: #d1d5db; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6b7280;">NO IMAGE</div>`
                 }
             </div>
-            <div class="flex-1 p-4 flex flex-col justify-between">
-                <div class="flex justify-between items-start mb-2">
+            <div style="flex: 1; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                     <div>
-                        <div class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">${date}</div>
-                        <h4 class="text-white text-sm font-medium">Order #${order.id.slice(0, 8).toUpperCase()}</h4>
-                        <div class="text-[10px] text-gray-500 mt-1 italic truncate max-w-[200px]">"${order.prompt}"</div>
+                        <div style="font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">${date}</div>
+                        <h4 style="color: #111827; font-size: 14px; font-weight: 500; margin: 0;">Order #${order.id.slice(0, 8).toUpperCase()}</h4>
+                        <div style="font-size: 11px; color: #6b7280; margin-top: 4px; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">"${order.prompt}"</div>
                     </div>
-                    <span class="text-[10px] px-2 py-1 rounded ${statusColors[order.status] || 'bg-gray-500/20 text-gray-400'} font-medium tracking-widest uppercase shrink-0">
+                    <span style="font-size: 10px; padding: 4px 8px; border-radius: 4px; ${statusColors[order.status] || 'background: rgba(107, 114, 128, 0.2); color: #9ca3af;'} font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0;">
                         ${statusLabel}
                     </span>
                 </div>
-                <div class="flex justify-between items-end">
-                    <div class="text-xs text-gray-400">
-                        <span class="uppercase font-bold">${order.tshirt_size}</span> • ${order.tshirt_quantity} Unit${order.tshirt_quantity > 1 ? 's' : ''}
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div style="font-size: 12px; color: #4b5563;">
+                        <span style="text-transform: uppercase; font-weight: bold; color: #111827;">${order.tshirt_size}</span> • ${order.tshirt_quantity} Unit${order.tshirt_quantity > 1 ? 's' : ''}
                     </div>
-                    <div class="text-yellow-600 font-medium tracking-widest text-sm">
+                    <div style="color: #111827; font-weight: 600; letter-spacing: 0.05em; font-size: 14px;">
                         ₹${(order.amount_in_paise / 100).toFixed(2)}
                     </div>
                 </div>
@@ -377,21 +379,106 @@ function showAuthError(message) {
 
 function updateUI() {
     if (state.user) {
-        DOM.rateLimitDisplay.textContent = state.generationsLeft;
+        if(DOM.rateLimitDisplay) {
+            DOM.rateLimitDisplay.textContent = `Number of Designs left: ${state.generationsLeft}`;
+        }
 
         if (state.generationsLeft <= 0) {
             DOM.generateBtn.disabled = true;
-            DOM.generateBtn.querySelector('span').textContent = 'Limit Reached';
+            DOM.generateBtn.querySelector('.btn-primary-text').textContent = 'Limit Reached';
         }
 
         // Show BUY NOW button if there's a current design
-        if (state.currentDesign) {
+        if (state.currentDesign && DOM.buyNowBtn) {
             DOM.buyNowBtn.classList.remove('hidden');
-        } else {
+        } else if (DOM.buyNowBtn) {
             DOM.buyNowBtn.classList.add('hidden');
         }
     }
 }
+
+// --- Professional Drag & Resize Engine (Interact.js) ---
+function initInteractJS() {
+    if (!state.currentDesign) {
+        state.currentDesign = { x: 0, y: 0, scale: 1 };
+    }
+
+    interact('#generated-image-container')
+        .draggable({
+            inertia: true,
+            modifiers: [
+                interact.modifiers.restrictRect({
+                    restriction: 'parent',
+                    endOnly: true
+                })
+            ],
+            autoScroll: true,
+            listeners: {
+                move: dragMoveListener,
+            }
+        });
+
+    if(DOM.resizeHandle) {
+        DOM.resizeHandle.addEventListener('mousedown', initResize);
+        DOM.resizeHandle.addEventListener('touchstart', initResize, { passive: false });
+    }
+}
+
+let startY = 0;
+let startScale = 1;
+
+function initResize(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    startY = e.clientY || (e.touches && e.touches[0].clientY);
+    startScale = state.currentDesign.scale || 1;
+
+    window.addEventListener('mousemove', resizeMoveListener);
+    window.addEventListener('touchmove', resizeMoveListener, { passive: false });
+    window.addEventListener('mouseup', stopResize);
+    window.addEventListener('touchend', stopResize);
+}
+
+function resizeMoveListener(e) {
+    e.preventDefault();
+    if (!state.currentDesign) return;
+
+    const currentY = e.clientY || (e.touches && e.touches[0].clientY);
+    const deltaY = startY - currentY;
+    let newScale = startScale + (deltaY * 0.01);
+
+    newScale = Math.max(0.3, Math.min(newScale, 2.5));
+
+    applyTransform(state.currentDesign.x, state.currentDesign.y, newScale);
+}
+
+function stopResize() {
+    window.removeEventListener('mousemove', resizeMoveListener);
+    window.removeEventListener('touchmove', resizeMoveListener);
+    window.removeEventListener('mouseup', stopResize);
+    window.removeEventListener('touchend', stopResize);
+}
+
+function dragMoveListener(event) {
+    if (!state.currentDesign) return;
+
+    const scale = state.currentDesign.scale || 1;
+    state.currentDesign.x += (event.dx / scale);
+    state.currentDesign.y += (event.dy / scale);
+
+    applyTransform(state.currentDesign.x, state.currentDesign.y, scale);
+}
+
+function applyTransform(x, y, scale) {
+    if (state.currentDesign) {
+        state.currentDesign.x = x;
+        state.currentDesign.y = y;
+        state.currentDesign.scale = scale;
+    }
+    // Prepend the CSS translate(-50%, -50%) to preserve the absolute center positioning
+    DOM.designWrapper.style.transform = `translate(-50%, -50%) translate3d(${x}px, ${y}px, 0) scale(${scale})`;
+}
+
 
 // --- Design Generation ---
 async function generateDesign() {
@@ -447,8 +534,10 @@ function setLoadingState(isLoading) {
     DOM.generateBtn.disabled = isLoading;
     if (isLoading) {
         DOM.btnLoader.classList.remove('hidden');
+        DOM.generateBtn.querySelector('.btn-primary-text').textContent = 'Generating...';
     } else {
         DOM.btnLoader.classList.add('hidden');
+        DOM.generateBtn.querySelector('.btn-primary-text').textContent = 'Generate';
     }
 }
 
@@ -458,7 +547,7 @@ function handleNewDesign(url, promptText, data) {
         id: data.designId,
         url: url,
         prompt: promptText,
-        scale: 1,
+        scale: 1, 
         x: 0,
         y: 0
     };
@@ -468,11 +557,13 @@ function handleNewDesign(url, promptText, data) {
 
     if (data && data.generationsLeft !== undefined) {
         state.generationsLeft = data.generationsLeft;
-        DOM.rateLimitDisplay.textContent = state.generationsLeft;
+        if(DOM.rateLimitDisplay) {
+            DOM.rateLimitDisplay.textContent = `Number of Designs left: ${state.generationsLeft}`;
+        }
 
         if (state.generationsLeft <= 0) {
             DOM.generateBtn.disabled = true;
-            DOM.generateBtn.querySelector('span').textContent = 'Limit Reached';
+            DOM.generateBtn.querySelector('.btn-primary-text').textContent = 'Limit Reached';
         }
     }
 
@@ -484,8 +575,10 @@ function loadDesignToCanvas(design) {
     state.currentDesign = design;
     DOM.generatedImage.src = design.url;
     DOM.designWrapper.classList.remove('hidden');
-    applyTransform(design.x, design.y, design.scale);
     
+    // Apply position constraints
+    applyTransform(design.x, design.y, design.scale);
+
     // Show BUY NOW button
     if (DOM.buyNowBtn) {
         DOM.buyNowBtn.classList.remove('hidden');
@@ -524,18 +617,12 @@ function renderHistory() {
     }
 
     state.history.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'aspect-square rounded overflow-hidden cursor-pointer border border-white/10 hover:border-yellow-600 transition-colors';
-
-        div.onclick = () => restoreFromHistory(item.id);
-
         const img = document.createElement('img');
         img.src = item.url || item.processed_image_url;
-        img.className = 'w-full h-full object-cover';
         img.alt = 'Design Archive';
+        img.onclick = () => restoreFromHistory(item.id);
 
-        div.appendChild(img);
-        DOM.archivesGrid.appendChild(div);
+        DOM.archivesGrid.appendChild(img);
     });
 }
 
@@ -550,7 +637,9 @@ async function loadHistory() {
             state.history = data.designs || [];
             if(data.generationsUsed !== undefined) {
                 state.generationsLeft = 5 - data.generationsUsed;
-                DOM.rateLimitDisplay.textContent = state.generationsLeft;
+                if(DOM.rateLimitDisplay) {
+                    DOM.rateLimitDisplay.textContent = `Number of Designs left: ${state.generationsLeft}`;
+                }
             }
 
             renderHistory();
@@ -561,63 +650,6 @@ async function loadHistory() {
 }
 
 // --- BUY NOW / Checkout Logic ---
-
-// Finalize design by "baking" t-shirt + design composite
-// async function handleFinalize() {
-//     if (!state.currentDesign) {
-//         throw new Error('No design to finalize');
-//     }
-
-//     try {
-//         const canvas = document.createElement('canvas');
-//         canvas.width = 1000;
-//         canvas.height = 1200;
-//         const ctx = canvas.getContext('2d');
-
-//         // 1. Load and Draw the T-Shirt Mockup First
-//         const tshirtImg = new Image();
-//         tshirtImg.src = DOM.tshirtImg.src;
-//         await new Promise((resolve) => (tshirtImg.onload = resolve));
-//         ctx.drawImage(tshirtImg, 0, 0, 1000, 1200);
-
-//         // 2. Draw the AI Design on top
-//         const designImg = new Image();
-//         designImg.crossOrigin = 'anonymous';
-//         designImg.src = state.currentDesign.url;
-        
-//         await new Promise((resolve, reject) => {
-//             designImg.onload = resolve;
-//             designImg.onerror = () => {
-//                 console.warn('CORS failed, retrying without crossOrigin constraint...');
-//                 designImg.crossOrigin = null;
-//                 designImg.src = state.currentDesign.url + '?t=' + Date.now();
-//                 designImg.onload = resolve;
-//                 designImg.onerror = reject;
-//             };
-//         });
-
-//         const centerX = 500 + (state.currentDesign.x * 2);
-//         const centerY = 600 + (state.currentDesign.y * 2);
-//         const dWidth = 400 * state.currentDesign.scale * 2;
-//         const dHeight = 400 * state.currentDesign.scale * 2;
-
-//         ctx.drawImage(
-//             designImg,
-//             centerX - dWidth / 2,
-//             centerY - dHeight / 2,
-//             dWidth,
-//             dHeight
-//         );
-
-//         return canvas.toDataURL('image/jpeg', 0.9);
-//     } catch (error) {
-//         console.error('Baking failed:', error);
-//         throw new Error('Failed to process design image. Please try regenerating or contact support if issue persists.');
-//     }
-// }
-
-// app.js
-
 async function handleFinalize() {
     if (!state.currentDesign) return null;
 
@@ -646,22 +678,24 @@ async function handleFinalize() {
         ctx.drawImage(tshirtImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         // 2. Calculate the exact UI scale factor
-        // We determine how much larger the canvas is compared to the UI element
         const uiWidth = DOM.tshirtImg.clientWidth;
         const uiHeight = DOM.tshirtImg.clientHeight;
         const scaleX = CANVAS_WIDTH / uiWidth;
         const scaleY = CANVAS_HEIGHT / uiHeight;
 
         // 3. Map the design size and position using these factors
-        // This ensures the design stays perfectly "within the shirt"
-        const finalWidth = (DOM.generatedImage.clientWidth * state.currentDesign.scale) * scaleX;
-        const finalHeight = (DOM.generatedImage.clientHeight * state.currentDesign.scale) * scaleY;
+        const safeScale = state.currentDesign.scale || 1;
+        const finalWidth = (DOM.generatedImage.clientWidth * safeScale) * scaleX;
+        const finalHeight = (DOM.generatedImage.clientHeight * safeScale) * scaleY;
 
         // Calculate center based on the relative offset from the UI
-        const finalX = (CANVAS_WIDTH / 2) + (state.currentDesign.x * scaleX);
-        const finalY = (CANVAS_HEIGHT / 2) + (state.currentDesign.y * scaleY);
+        const offsetX = state.currentDesign.x || 0;
+        const offsetY = state.currentDesign.y || 0;
+        
+        const finalX = (CANVAS_WIDTH / 2) + (offsetX * scaleX);
+        const finalY = (CANVAS_HEIGHT / 2) + (offsetY * scaleY);
 
-        // 4. Draw the design
+        // 4. Draw the design perfectly mapped to canvas coordinates
         ctx.drawImage(
             designImg, 
             finalX - (finalWidth / 2), 
@@ -723,21 +757,24 @@ async function handleBuyNow() {
 function showSizeModal() {
     const modal = document.createElement('div');
     modal.id = 'size-modal';
-    modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4';
+    modal.className = 'modal-root';
+    
+    // Inline styling added purely to match the UI aesthetic
     modal.innerHTML = `
-        <div class="bg-[#111] border border-white/10 rounded-xl p-6 w-full max-w-sm">
-            <h3 class="serif text-xl mb-2">Select Size</h3>
-            <p class="text-sm text-gray-400 mb-6">Choose your T-shirt size</p>
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="S">S</button>
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="M">M</button>
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="L">L</button>
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="XL">XL</button>
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="XXL">XXL</button>
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel" style="max-width: 380px;">
+            <h3 class="serif modal-title" style="margin-bottom: 8px;">Select Size</h3>
+            <p class="modal-subcopy" style="margin-bottom: 24px;">Choose your T-shirt size</p>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;">
+                <button class="size-btn btn-secondary" data-size="S" style="margin-top:0;">S</button>
+                <button class="size-btn btn-secondary" data-size="M" style="margin-top:0;">M</button>
+                <button class="size-btn btn-secondary" data-size="L" style="margin-top:0;">L</button>
+                <button class="size-btn btn-secondary" data-size="XL" style="margin-top:0;">XL</button>
+                <button class="size-btn btn-secondary" data-size="XXL" style="margin-top:0; grid-column: span 2;">XXL</button>
             </div>
-            <div class="flex gap-3">
-                <button id="cancel-size-btn" class="flex-1 bg-[#111] hover:bg-[#222] text-gray-400 py-3 rounded-lg transition">Cancel</button>
-                <button id="proceed-buy-btn" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-black font-semibold py-3 rounded-lg transition">Proceed</button>
+            <div style="display: flex; gap: 12px;">
+                <button id="cancel-size-btn" class="btn-secondary" style="margin-top:0; flex: 1;">Cancel</button>
+                <button id="proceed-buy-btn" class="btn-primary" style="flex: 1;">Proceed</button>
             </div>
         </div>
     `;
@@ -747,8 +784,14 @@ function showSizeModal() {
 
     modal.querySelectorAll('.size-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            modal.querySelectorAll('.size-btn').forEach(b => b.classList.remove('border-yellow-600', 'bg-[#222]'));
-            btn.classList.add('border-yellow-600', 'bg-[#222]');
+            modal.querySelectorAll('.size-btn').forEach(b => {
+                b.style.borderColor = '#d1d5db';
+                b.style.backgroundColor = '#ffffff';
+                b.style.color = '#111827';
+            });
+            btn.style.borderColor = '#111827';
+            btn.style.backgroundColor = '#111827';
+            btn.style.color = '#ffffff';
             selectedSize = btn.dataset.size;
         });
     });
@@ -821,8 +864,8 @@ async function initiateCheckout(tshirtSize) {
             key: paymentData.key,
             amount: paymentData.amount,
             currency: paymentData.currency,
-            name: 'LUXE.AI',
-            description: 'T-Shirt Purchase',
+            name: 'March Studio',
+            description: 'Custom Designed T-Shirt',
             order_id: paymentData.razorpayOrderId,
             handler: function(response) {
                 verifyPayment(response, orderData.orderId);
@@ -833,7 +876,7 @@ async function initiateCheckout(tshirtSize) {
                 contact: state.user?.phone || ''
             },
             theme: {
-                color: '#ca8a04'
+                color: '#111827'
             }
         };
 
@@ -875,85 +918,6 @@ async function verifyPayment(paymentResponse, orderId) {
         console.error('Payment verification error:', error);
         alert(error.message || 'Payment verification failed');
     }
-}
-
-// --- Professional Drag & Resize Engine (Interact.js) ---
-function initInteractJS() {
-    if (!state.currentDesign) {
-        state.currentDesign = { x: 0, y: 0, scale: 1 };
-    }
-
-    interact('#design-wrapper')
-        .draggable({
-            inertia: true,
-            modifiers: [
-                interact.modifiers.restrictRect({
-                    restriction: 'parent',
-                    endOnly: true
-                })
-            ],
-            autoScroll: true,
-            listeners: {
-                move: dragMoveListener,
-            }
-        });
-
-    DOM.resizeHandle.addEventListener('mousedown', initResize);
-    DOM.resizeHandle.addEventListener('touchstart', initResize, { passive: false });
-}
-
-let startY = 0;
-let startScale = 1;
-
-function initResize(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    startY = e.clientY || (e.touches && e.touches[0].clientY);
-    startScale = state.currentDesign.scale || 1;
-
-    window.addEventListener('mousemove', resizeMoveListener);
-    window.addEventListener('touchmove', resizeMoveListener, { passive: false });
-    window.addEventListener('mouseup', stopResize);
-    window.addEventListener('touchend', stopResize);
-}
-
-function resizeMoveListener(e) {
-    e.preventDefault();
-    if (!state.currentDesign) return;
-
-    const currentY = e.clientY || (e.touches && e.touches[0].clientY);
-    const deltaY = startY - currentY;
-    let newScale = startScale + (deltaY * 0.01);
-
-    newScale = Math.max(0.3, Math.min(newScale, 2.5));
-
-    applyTransform(state.currentDesign.x, state.currentDesign.y, newScale);
-}
-
-function stopResize() {
-    window.removeEventListener('mousemove', resizeMoveListener);
-    window.removeEventListener('touchmove', resizeMoveListener);
-    window.removeEventListener('mouseup', stopResize);
-    window.removeEventListener('touchend', stopResize);
-}
-
-function dragMoveListener(event) {
-    if (!state.currentDesign) return;
-
-    const scale = state.currentDesign.scale || 1;
-    state.currentDesign.x += (event.dx / scale);
-    state.currentDesign.y += (event.dy / scale);
-
-    applyTransform(state.currentDesign.x, state.currentDesign.y, scale);
-}
-
-function applyTransform(x, y, scale) {
-    if (state.currentDesign) {
-        state.currentDesign.x = x;
-        state.currentDesign.y = y;
-        state.currentDesign.scale = scale;
-    }
-    DOM.designWrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
 }
 
 // Start the app
