@@ -24,14 +24,17 @@ export const imageStorage = {
                 .webp({ quality: 80 })
                 .toBuffer();
 
-            // Upload to R2
+            // Upload to R2 with CORS headers
             const fileName = `${folder}/${uuid()}.webp`;
             await s3Client.send(new PutObjectCommand({
                 Bucket: process.env.CLOUDFLARE_R2_BUCKET,
                 Key: fileName,
                 Body: optimized,
                 ContentType: 'image/webp',
-                CacheControl: 'public, max-age=31536000'
+                CacheControl: 'public, max-age=31536000',
+                Metadata: {
+                    'access-control-allow-origin': '*'
+                }
             }));
 
             const cdnUrl = `${process.env.CLOUDFLARE_R2_URL}/${fileName}`;
@@ -60,7 +63,10 @@ export const imageStorage = {
                 Key: fileName,
                 Body: optimized,
                 ContentType: 'image/webp',
-                CacheControl: 'public, max-age=31536000'
+                CacheControl: 'public, max-age=31536000',
+                Metadata: {
+                    'access-control-allow-origin': '*'
+                }
             }));
 
             return `${process.env.CLOUDFLARE_R2_URL}/${fileName}`;
@@ -78,7 +84,10 @@ export const imageStorage = {
                 Key: key,
                 Body: buffer,
                 ContentType: 'image/webp',
-                CacheControl: 'public, max-age=31536000'
+                CacheControl: 'public, max-age=31536000',
+                Metadata: {
+                    'access-control-allow-origin': '*'
+                }
             }));
 
             const cdnUrl = `${process.env.CLOUDFLARE_R2_URL}/${key}`;

@@ -9,12 +9,10 @@ const state = {
     currentDesign: null,
     currentTshirtColor: '#1a1a1a',
     history: []
-    // Removed the clunky manual drag state
 };
 
 // --- DOM Elements ---
 const DOM = {
-    // Auth
     authModal: document.getElementById('auth-modal'),
     loginForm: document.getElementById('login-form'),
     registerForm: document.getElementById('register-form'),
@@ -29,8 +27,6 @@ const DOM = {
     showLoginBtn: document.getElementById('show-login-btn'),
     authError: document.getElementById('auth-error'),
     logoutBtn: document.getElementById('logout-btn'),
-
-    // Main UI
     tshirtImg: document.getElementById('tshirt-base-img'),
     colorBtns: document.querySelectorAll('.color-btn'),
     promptInput: document.getElementById('prompt-input'),
@@ -48,7 +44,7 @@ const DOM = {
 // --- Initialization ---
 async function init() {
     setupEventListeners();
-    initInteractJS(); // Initialize the new drag engine
+    initInteractJS();
     
     if (state.token) {
         await checkAuth();
@@ -57,22 +53,23 @@ async function init() {
 
 // --- Event Listeners ---
 function setupEventListeners() {
-    // Auth buttons
     DOM.loginBtn.addEventListener('click', handleLogin);
     DOM.registerBtn.addEventListener('click', handleRegister);
+    
     DOM.showRegisterBtn.addEventListener('click', () => {
         DOM.loginForm.classList.add('hidden');
         DOM.registerForm.classList.remove('hidden');
         DOM.authError.classList.add('hidden');
     });
+    
     DOM.showLoginBtn.addEventListener('click', () => {
         DOM.registerForm.classList.add('hidden');
         DOM.loginForm.classList.remove('hidden');
         DOM.authError.classList.add('hidden');
     });
+    
     DOM.logoutBtn.addEventListener('click', handleLogout);
     
-    // Color buttons
     DOM.colorBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             const newImageSrc = e.target.dataset.src;
@@ -82,7 +79,6 @@ function setupEventListeners() {
                 DOM.tshirtImg.style.opacity = 1;
             }, 150);
             
-            // Update color state
             const colorMap = {
                 'assets/black-tshirt.png': '#1a1a1a',
                 'assets/white-tshirt.png': '#f5f5f5',
@@ -93,166 +89,101 @@ function setupEventListeners() {
         });
     });
     
-    // Generate button
     DOM.generateBtn.addEventListener('click', generateDesign);
-
-    // Buy Now button
     DOM.buyNowBtn.addEventListener('click', handleBuyNow);
-
-    // Note: Manual drag and resize listeners have been removed from here
-    // as Interact.js now handles the heavy lifting!
 }
 
-// --- Authentication Functions ---
+// --- RESTORED AUTH HANDLERS ---
 async function checkAuth() {
     try {
         const response = await fetch(`${API_BASE}/auth/me`, {
             headers: { 'Authorization': `Bearer ${state.token}` }
         });
-        
         if (response.ok) {
             state.user = await response.json();
             state.generationsLeft = 5 - state.user.generationsUsed;
-            showApp();
+            DOM.authModal.classList.add('hidden');
+            DOM.logoutBtn.classList.remove('hidden');
+            updateUI();
             loadHistory();
         } else {
             localStorage.removeItem('luxe_token');
             state.token = null;
-            showAuthModal();
+            DOM.authModal.classList.remove('hidden');
         }
     } catch (error) {
-        console.error('Auth check failed:', error);
-        showAuthModal();
+        DOM.authModal.classList.remove('hidden');
     }
-}
-
-function showAuthModal() {
-    if(DOM.authModal) DOM.authModal.classList.remove('hidden');
-}
-
-function hideAuthModal() {
-    if(DOM.authModal) DOM.authModal.classList.add('hidden');
-}
-
-function showApp() {
-    hideAuthModal();
-    if(DOM.logoutBtn) DOM.logoutBtn.classList.remove('hidden');
-    updateUI();
 }
 
 async function handleLogin() {
     const email = DOM.loginEmail.value;
     const password = DOM.loginPassword.value;
-    
-    if (!email || !password) {
-        showAuthError('Please fill all fields');
-        return;
-    }
-    
+    if (!email || !password) return showAuthError('Please fill all fields');
+
     try {
         const response = await fetch(`${API_BASE}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        
         const data = await response.json();
-        
         if (response.ok) {
             state.token = data.token;
-            state.user = data.user;
-            localStorage.setItem('luxe_token', state.token);
-            state.generationsLeft = 5 - state.user.generationsUsed;
-            showApp();
-            loadHistory();
+            localStorage.setItem('luxe_token', data.token);
+            window.location.reload();
         } else {
             showAuthError(data.error || 'Login failed');
         }
-    } catch (error) {
-        showAuthError('Connection error');
-    }
+    } catch (e) { showAuthError('Connection error'); }
 }
 
 async function handleRegister() {
     const name = DOM.registerName.value;
     const email = DOM.registerEmail.value;
     const password = DOM.registerPassword.value;
-    
-    if (!name || !email || !password) {
-        showAuthError('Please fill all fields');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showAuthError('Password must be at least 6 characters');
-        return;
-    }
-    
+    if (!name || !email || !password) return showAuthError('Please fill all fields');
+
     try {
         const response = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })
         });
-        
         const data = await response.json();
-        
         if (response.ok) {
             state.token = data.token;
-            state.user = data.user;
-            localStorage.setItem('luxe_token', state.token);
-            state.generationsLeft = 5 - state.user.generationsUsed;
-            showApp();
-            loadHistory();
+            localStorage.setItem('luxe_token', data.token);
+            window.location.reload();
         } else {
             showAuthError(data.error || 'Registration failed');
         }
-    } catch (error) {
-        showAuthError('Connection error');
-    }
+    } catch (e) { showAuthError('Connection error'); }
 }
 
 function handleLogout() {
     localStorage.removeItem('luxe_token');
-    state.token = null;
-    state.user = null;
-    state.currentDesign = null;
-    state.history = [];
     window.location.reload();
 }
 
-function showAuthError(message) {
-    if(DOM.authError) {
-        DOM.authError.textContent = message;
-        DOM.authError.classList.remove('hidden');
-    }
+function showAuthError(msg) {
+    DOM.authError.textContent = msg;
+    DOM.authError.classList.remove('hidden');
 }
 
 function updateUI() {
-    if (state.user) {
-        DOM.rateLimitDisplay.textContent = state.generationsLeft;
-
-        if (state.generationsLeft <= 0) {
-            DOM.generateBtn.disabled = true;
-            DOM.generateBtn.querySelector('span').textContent = 'Limit Reached';
-        }
-
-        // Show BUY NOW button if there's a current design
-        if (state.currentDesign) {
-            DOM.buyNowBtn.classList.remove('hidden');
-        }
-    }
+    DOM.rateLimitDisplay.textContent = state.generationsLeft;
+    if (state.generationsLeft <= 0) DOM.generateBtn.disabled = true;
+    if (state.currentDesign) DOM.buyNowBtn.classList.remove('hidden');
 }
 
 // --- Design Generation ---
 async function generateDesign() {
     const prompt = DOM.promptInput.value.trim();
-    if (!prompt) {
-        alert('Please describe your design vision');
-        return;
-    }
+    if (!prompt) return alert('Please describe your vision');
     
-    setLoadingState(true);
+    DOM.generateBtn.disabled = true;
+    DOM.btnLoader.classList.remove('hidden');
     
     try {
         const response = await fetch(`${API_BASE}/designs/generate`, {
@@ -261,115 +192,66 @@ async function generateDesign() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${state.token}`
             },
-            body: JSON.stringify({
-                prompt: prompt,
-                tshirtColor: state.currentTshirtColor
-            })
+            body: JSON.stringify({ prompt, tshirtColor: state.currentTshirtColor })
         });
         
         const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
         
-        if (!response.ok) {
-            throw new Error(data.error || 'Generation failed');
-        }
-        
-        const imageUrl = data.imageUrl;
-        
-        // Preload image
-        await new Promise((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = resolve;
-            img.onerror = reject;
-            img.src = imageUrl;
-        });
-        
-        handleNewDesign(imageUrl, prompt, data);
-        
+        handleNewDesign(data.imageUrl, prompt, data);
     } catch (error) {
-        console.error('Generation failed:', error);
-        alert(error.message || 'Failed to generate design');
+        alert(error.message);
     } finally {
-        setLoadingState(false);
-    }
-}
-
-function setLoadingState(isLoading) {
-    DOM.generateBtn.disabled = isLoading;
-    if (isLoading) {
-        DOM.btnLoader.classList.remove('hidden');
-    } else {
+        DOM.generateBtn.disabled = false;
         DOM.btnLoader.classList.add('hidden');
     }
 }
 
-// --- History & Canvas Logic ---
 function handleNewDesign(url, promptText, data) {
-    const newDesign = {
-        // FIX: Use the actual UUID from the database instead of Date.now()
-        id: data.designId, 
-        url: url,
-        prompt: promptText,
-        scale: 1,
-        x: 0,
-        y: 0
-    };
-    
+    const newDesign = { id: data.designId, url, prompt: promptText, scale: 1, x: 0, y: 0 };
     state.history.unshift(newDesign);
-    if (state.history.length > 5) state.history.pop();
-    
-    if (data && data.generationsLeft !== undefined) {
-        state.generationsLeft = data.generationsLeft;
-        DOM.rateLimitDisplay.textContent = state.generationsLeft;
-        
-        if (state.generationsLeft <= 0) {
-            DOM.generateBtn.disabled = true;
-            DOM.generateBtn.querySelector('span').textContent = 'Limit Reached';
-        }
-    }
-    
+    state.generationsLeft = 5 - data.generationsUsed;
     renderHistory();
     loadDesignToCanvas(newDesign);
+    updateUI();
 }
 
 function loadDesignToCanvas(design) {
-    state.currentDesign = design;
-    DOM.generatedImage.src = design.url;
-    DOM.designWrapper.classList.remove('hidden');
-    applyTransform(design.x, design.y, design.scale);
-    
-    // Show BUY NOW button
-    if (DOM.buyNowBtn) {
-        DOM.buyNowBtn.classList.remove('hidden');
-    }
-}
+    // Normalize the design object for consistent state
+    state.currentDesign = {
+        ...design,
+        url: design.url || design.processed_image_url
+    };
 
-function restoreFromHistory(id) {
-    // This will now correctly match the UUID strings from the database
-    const design = state.history.find(d => d.id === id);
-    if (design) {
-        // Normalize the URL if it's coming from the database
-        const normalizedDesign = {
-            ...design,
-            url: design.url || design.processed_image_url
-        };
-        loadDesignToCanvas(normalizedDesign);
-    }
+    DOM.generatedImage.src = state.currentDesign.url;
+    DOM.designWrapper.classList.remove('hidden');
+    
+    // Maintain previous position if it exists, otherwise center it
+    const pos = design.design_position || { x: 0, y: 0, scale: 1 };
+    applyTransform(pos.x, pos.y, pos.scale);
+    
+    renderHistory(); // Refresh history to update the active ring
+    updateUI();
 }
 
 function renderHistory() {
-    if (DOM.emptyHistory) DOM.emptyHistory.remove();
     DOM.historyList.innerHTML = '';
     
+    if (state.history.length === 0) {
+        DOM.historyList.innerHTML = '<div class="col-span-4 text-center text-gray-500 text-xs py-8">No designs yet</div>';
+        return;
+    }
+
     state.history.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'aspect-square rounded overflow-hidden cursor-pointer border border-white/10 hover:border-yellow-600 transition-colors';
+        // Add active ring if this is the currently selected design
+        const isActive = state.currentDesign?.id === item.id;
+        div.className = `aspect-square rounded-lg overflow-hidden cursor-pointer border border-white/10 hover:border-yellow-600 transition ${isActive ? 'ring-2 ring-yellow-500' : ''}`;
         
-        // Use the ID from the database for the click handler
-        div.onclick = () => restoreFromHistory(item.id);
+        div.onclick = () => loadDesignToCanvas(item);
         
         const img = document.createElement('img');
-        // Handle both local state and database state property names
+        // FIX: Check both property names
         img.src = item.url || item.processed_image_url; 
         img.className = 'w-full h-full object-cover';
         
@@ -379,281 +261,180 @@ function renderHistory() {
 }
 
 async function loadHistory() {
-    try {
-        const response = await fetch(`${API_BASE}/designs/history`, {
-            headers: { 'Authorization': `Bearer ${state.token}` }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            state.history = data.designs || [];
-            if(data.generationsUsed !== undefined) {
-                state.generationsLeft = 5 - data.generationsUsed;
-                DOM.rateLimitDisplay.textContent = state.generationsLeft;
-            }
-
-            if (state.history.length > 0) {
-                renderHistory();
-            }
-        }
-    } catch (error) {
-        console.error('Failed to load history:', error);
+    const response = await fetch(`${API_BASE}/designs/history`, {
+        headers: { 'Authorization': `Bearer ${state.token}` }
+    });
+    if (response.ok) {
+        const data = await response.json();
+        state.history = data.designs || [];
+        renderHistory();
     }
 }
 
-// --- BUY NOW / Checkout Logic ---
+// --- Finalize & Checkout ---
+async function handleFinalize() {
+    if (!state.currentDesign) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 2000; canvas.height = 2400; 
+    const ctx = canvas.getContext('2d');
 
-async function handleBuyNow() {
-    if (!state.currentDesign) {
-        alert('Please generate or select a design first');
-        return;
-    }
+    const tshirtImg = new Image();
+    tshirtImg.src = DOM.tshirtImg.src;
+    const designImg = new Image();
+    designImg.crossOrigin = "anonymous";
+    designImg.src = state.currentDesign.url;
 
-    if (!state.token) {
-        showAuthModal();
-        return;
-    }
+    await Promise.all([
+        new Promise(res => tshirtImg.onload = res),
+        new Promise(res => designImg.onload = res)
+    ]);
 
-    // Show size selection modal
+    ctx.drawImage(tshirtImg, 0, 0, 2000, 2400);
+    const centerX = 1000 + (state.currentDesign.x * 4); 
+    const centerY = 1200 + (state.currentDesign.y * 4);
+    const dWidth = 800 * state.currentDesign.scale;
+    const dHeight = 800 * state.currentDesign.scale;
+    ctx.drawImage(designImg, centerX - (dWidth/2), centerY - (dHeight/2), dWidth, dHeight);
+
+    return canvas.toDataURL('image/jpeg', 0.95);
+}
+
+async function finalizeDesignOnServer() {
+    const finalImageBase64 = await handleFinalize();
+    if (!finalImageBase64) throw new Error('Baking failed');
+
+    const response = await fetch(`${API_BASE}/designs/${state.currentDesign.id}/finalize`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.token}`
+        },
+        body: JSON.stringify({ finalImage: finalImageBase64 })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    return data.finalizedImageUrl;
+}
+
+function handleBuyNow() {
+    if (!state.currentDesign) return;
     showSizeModal();
 }
 
 function showSizeModal() {
     const modal = document.createElement('div');
-    modal.id = 'size-modal';
     modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4';
     modal.innerHTML = `
         <div class="bg-[#1a1a1a] border border-white/10 rounded-xl w-full max-w-md p-8">
-            <div class="text-center mb-6">
-                <h2 class="text-xl font-semibold text-white">Select Size</h2>
-                <p class="text-gray-500 text-sm mt-2">Choose your T-shirt size</p>
-            </div>
-
+            <h2 class="text-xl font-semibold text-white text-center mb-6 serif">Select Size</h2>
             <div class="grid grid-cols-2 gap-3 mb-6">
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="S">S</button>
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="M">M</button>
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="L">L</button>
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="XL">XL</button>
-                <button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="XXL">XXL</button>
+                ${['S', 'M', 'L', 'XL', 'XXL'].map(s => `<button class="size-btn bg-[#111] border border-white/10 rounded-lg p-4 text-white hover:border-yellow-600 transition" data-size="${s}">${s}</button>`).join('')}
             </div>
-
             <div class="flex gap-3">
-                <button id="cancel-size-btn" class="flex-1 bg-[#111] hover:bg-[#222] text-gray-400 py-3 rounded-lg transition">Cancel</button>
-                <button id="proceed-buy-btn" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-black font-semibold py-3 rounded-lg transition">Proceed</button>
+                <button onclick="this.closest('.fixed').remove()" class="flex-1 bg-[#111] text-gray-400 py-3 rounded-lg">Cancel</button>
+                <button id="proceed-btn" class="flex-1 bg-yellow-600 text-black font-semibold py-3 rounded-lg">Proceed</button>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
 
     let selectedSize = null;
-
     modal.querySelectorAll('.size-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            modal.querySelectorAll('.size-btn').forEach(b => b.classList.remove('border-yellow-600', 'bg-[#222]'));
-            btn.classList.add('border-yellow-600', 'bg-[#222]');
+        btn.onclick = () => {
+            modal.querySelectorAll('.size-btn').forEach(b => b.classList.remove('border-yellow-600'));
+            btn.classList.add('border-yellow-600');
             selectedSize = btn.dataset.size;
-        });
-    });
-
-    document.getElementById('cancel-size-btn').addEventListener('click', () => {
-        modal.remove();
-    });
-
-    document.getElementById('proceed-buy-btn').addEventListener('click', () => {
-        if (!selectedSize) {
-            alert('Please select a size');
-            return;
-        }
-        modal.remove();
-        initiateCheckout(selectedSize);
-    });
-}
-
-async function initiateCheckout(tshirtSize) {
-    try {
-        // Create order
-        const orderResponse = await fetch(`${API_BASE}/orders/buy-now`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.token}`
-            },
-            body: JSON.stringify({
-                designId: state.currentDesign.id,
-                tshirtSize: tshirtSize,
-                quantity: 1
-            })
-        });
-
-        const orderData = await orderResponse.json();
-
-        if (!orderResponse.ok) {
-            throw new Error(orderData.error || 'Failed to create order');
-        }
-
-        // Initiate Razorpay payment
-        const paymentResponse = await fetch(`${API_BASE}/orders/initiate-payment`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.token}`
-            },
-            body: JSON.stringify({
-                orderId: orderData.orderId
-            })
-        });
-
-        const paymentData = await paymentResponse.json();
-
-        if (!paymentResponse.ok) {
-            throw new Error(paymentData.error || 'Failed to initiate payment');
-        }
-
-        // Open Razorpay checkout
-        const options = {
-            key: paymentData.key,
-            amount: paymentData.amount,
-            currency: paymentData.currency,
-            name: 'LUXE.AI',
-            description: 'T-Shirt Purchase',
-            order_id: paymentData.razorpayOrderId,
-            handler: function(response) {
-                verifyPayment(response, orderData.orderId);
-            },
-            prefill: {
-                name: state.user?.name || '',
-                email: state.user?.email || '',
-                contact: state.user?.phone || ''
-            },
-            theme: {
-                color: '#ca8a04'
-            }
         };
+    });
 
-        const rzp = new Razorpay(options);
-        rzp.on('payment.failed', function(response) {
-            alert('Payment failed: ' + response.error.description);
-        });
-        rzp.open();
-
-    } catch (error) {
-        console.error('Checkout error:', error);
-        alert(error.message || 'Failed to proceed with checkout');
-    }
+    document.getElementById('proceed-btn').onclick = async () => {
+        if (!selectedSize) return alert('Select a size');
+        const btn = document.getElementById('proceed-btn');
+        btn.disabled = true; btn.textContent = 'Baking Proof...';
+        try {
+            await finalizeDesignOnServer();
+            modal.remove();
+            initiateCheckout(selectedSize);
+        } catch (e) { alert(e.message); btn.disabled = false; }
+    };
 }
 
-async function verifyPayment(paymentResponse, orderId) {
+async function initiateCheckout(size) {
     try {
-        const response = await fetch(`${API_BASE}/payments/verify`, {
+        const orderRes = await fetch(`${API_BASE}/orders/buy-now`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.token}`
-            },
-            body: JSON.stringify({
-                razorpayOrderId: paymentResponse.razorpay_order_id,
-                razorpayPaymentId: paymentResponse.razorpay_payment_id,
-                razorpaySignature: paymentResponse.razorpay_signature
-            })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
+            body: JSON.stringify({ designId: state.currentDesign.id, tshirtSize: size })
         });
+        const orderData = await orderRes.json();
+        
+        const payRes = await fetch(`${API_BASE}/orders/initiate-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
+            body: JSON.stringify({ orderId: orderData.orderId })
+        });
+        const payData = await payRes.json();
 
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            alert('Payment successful! Your order has been placed.');
-            // Optionally redirect or show success page
-        } else {
-            throw new Error(data.error || 'Payment verification failed');
-        }
-    } catch (error) {
-        console.error('Payment verification error:', error);
-        alert(error.message || 'Payment verification failed');
-    }
+        const options = {
+            key: payData.key,
+            amount: payData.amount,
+            currency: payData.currency,
+            order_id: payData.razorpayOrderId,
+            handler: (res) => verifyPayment(res, orderData.orderId),
+            theme: { color: '#ca8a04' }
+        };
+        new Razorpay(options).open();
+    } catch (e) { alert('Checkout failed'); }
 }
 
-// --- Professional Drag & Resize Engine (Interact.js) ---
+async function verifyPayment(res, orderId) {
+    const verify = await fetch(`${API_BASE}/payments/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
+        body: JSON.stringify({
+            razorpayOrderId: res.razorpay_order_id,
+            razorpayPaymentId: res.razorpay_payment_id,
+            razorpaySignature: res.razorpay_signature
+        })
+    });
+    if (verify.ok) alert('✅ Order placed successfully!');
+}
 
+// --- Interact.js Engine ---
 function initInteractJS() {
-    if (!state.currentDesign) {
-        state.currentDesign = { x: 0, y: 0, scale: 1 };
-    }
-
-    interact('#design-wrapper')
-        .draggable({
-            inertia: true, // Smooth glide
-            modifiers: [
-                interact.modifiers.restrictRect({
-                    restriction: 'parent', // Stays inside the container
-                    endOnly: true
-                })
-            ],
-            autoScroll: true,
-            listeners: {
-                move: dragMoveListener,
-            }
-        });
-
-    // Handle custom resize handle
-    DOM.resizeHandle.addEventListener('mousedown', initResize);
-    DOM.resizeHandle.addEventListener('touchstart', initResize, { passive: false });
+    interact('#design-wrapper').draggable({
+        inertia: true,
+        modifiers: [interact.modifiers.restrictRect({ restriction: 'parent', endOnly: true })],
+        listeners: { move: dragMoveListener }
+    });
+    DOM.resizeHandle.onmousedown = initResize;
 }
 
-// Global resize state
-let startY = 0;
-let startScale = 1;
-
+let rStartY = 0, rStartScale = 1;
 function initResize(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    startY = e.clientY || (e.touches && e.touches[0].clientY);
-    startScale = state.currentDesign.scale || 1;
-    
-    window.addEventListener('mousemove', resizeMoveListener);
-    window.addEventListener('touchmove', resizeMoveListener, { passive: false });
-    window.addEventListener('mouseup', stopResize);
-    window.addEventListener('touchend', stopResize);
+    e.preventDefault(); e.stopPropagation();
+    rStartY = e.clientY;
+    rStartScale = state.currentDesign.scale || 1;
+    window.onmousemove = resizeMoveListener;
+    window.onmouseup = () => window.onmousemove = null;
 }
 
 function resizeMoveListener(e) {
-    e.preventDefault();
-    if (!state.currentDesign) return;
-    
-    const currentY = e.clientY || (e.touches && e.touches[0].clientY);
-    const deltaY = startY - currentY; 
-    let newScale = startScale + (deltaY * 0.01);
-    
-    // Constrain scale
-    newScale = Math.max(0.3, Math.min(newScale, 2.5));
-    
+    const deltaY = rStartY - e.clientY;
+    const newScale = Math.max(0.3, Math.min(2.5, rStartScale + (deltaY * 0.01)));
     applyTransform(state.currentDesign.x, state.currentDesign.y, newScale);
 }
 
-function stopResize() {
-    window.removeEventListener('mousemove', resizeMoveListener);
-    window.removeEventListener('touchmove', resizeMoveListener);
-    window.removeEventListener('mouseup', stopResize);
-    window.removeEventListener('touchend', stopResize);
-}
-
 function dragMoveListener(event) {
-    if (!state.currentDesign) return;
-    
     const scale = state.currentDesign.scale || 1;
-    state.currentDesign.x += (event.dx / scale);
-    state.currentDesign.y += (event.dy / scale);
-
-    applyTransform(state.currentDesign.x, state.currentDesign.y, scale);
+    applyTransform(state.currentDesign.x + (event.dx / scale), state.currentDesign.y + (event.dy / scale), scale);
 }
 
 function applyTransform(x, y, scale) {
     if (state.currentDesign) {
-        state.currentDesign.x = x;
-        state.currentDesign.y = y;
-        state.currentDesign.scale = scale;
+        state.currentDesign.x = x; state.currentDesign.y = y; state.currentDesign.scale = scale;
     }
-    // Using translate3d forces GPU rendering for butter-smooth movement
     DOM.designWrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
 }
 
-// Start the app
 init();

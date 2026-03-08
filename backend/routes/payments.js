@@ -53,6 +53,11 @@ router.post('/verify', authMiddleware, async (req, res) => {
         // Update order status to paid
         await db.updateOrderStatus(order_found.id, 'paid');
 
+    
+    // ✨ NEW: Automatically push to the production printer queue
+    console.log(`📦 Payment verified. Moving Order ${order_found.id} to Production Queue...`);
+    await db.createFulfillmentJob(order_found.id);
+
         res.json({
             success: true,
             message: 'Payment verified successfully',
@@ -84,14 +89,13 @@ router.post('/webhook', async (req, res) => {
         }
 
         // Handle different event types
+// Handle different event types
         if (event === 'payment.authorized') {
             const { razorpay_payment_id, razorpay_order_id } = payload.payment;
 
-            // Find order
             const order = await db.getOrderByRazorpayId(razorpay_order_id);
 
             if (order) {
-                // Verify signature on the server side
                 const isValid = await razorpayService.verifySignature(
                     razorpay_order_id,
                     razorpay_payment_id,
@@ -99,7 +103,6 @@ router.post('/webhook', async (req, res) => {
                 );
 
                 if (isValid) {
-                    // Create payment record
                     await db.createPayment(
                         order.id,
                         razorpay_payment_id,
@@ -109,11 +112,14 @@ router.post('/webhook', async (req, res) => {
 
                     // Update order status
                     await db.updateOrderStatus(order.id, 'paid');
-
-                    // TODO: Trigger email notification
+                    
+                    // FIX: Use 'order.id' instead of 'order_found.id'
+                    console.log(`📦 Webhook verified. Moving Order ${order.id} to Production Queue...`);
+                    await db.createFulfillmentJob(order.id);
                 }
             }
         }
+        
 
         // Mark as processed
         await db.markWebhookProcessed(razorpayEventId);

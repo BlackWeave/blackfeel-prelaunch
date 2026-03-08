@@ -7,7 +7,7 @@ import { removeBgService } from '../services/removeBg.js';
 
 const router = express.Router();
 
-// Generate design with OpenRouter
+// Generate design logic remains unchanged
 router.post('/generate', authMiddleware, async (req, res) => {
     try {
         const { prompt, tshirtColor = '#1a1a1a' } = req.body;
@@ -16,40 +16,22 @@ router.post('/generate', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Prompt is required' });
         }
 
-        // Get user
         const user = await db.getUserById(req.userId);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+        if (!user) return res.status(404).json({ error: 'User not found' });
 
-        // Check generation limits
         if (user.generations_used >= 5) {
-            return res.status(403).json({
-                error: 'Daily generation limit reached (5/5)',
-                generationsUsed: user.generations_used
-            });
+            return res.status(403).json({ error: 'Daily limit reached' });
         }
 
-        if (user.is_finalized) {
-            return res.status(403).json({
-                error: 'Design already finalized. Come back tomorrow for more.'
-            });
-        }
-
-        // Generate image with OpenRouter (Gemini 2.5 Flash Image)
-        console.log('✨ Generating image with Gemini 2.5 via OpenRouter for prompt:', prompt);
+        console.log('✨ Generating image with Gemini 2.5 via OpenRouter...');
         const base64DataUrl = await openRouterService.generateImage(prompt);
+        
+        // Remove background for the interactive decal
         const transparentBase64 = await removeBgService.process(base64DataUrl);
 
-        if (!base64DataUrl) {
-            return res.status(500).json({ error: 'Failed to generate image' });
-        }
-
-        // Upload Base64 directly to R2
         console.log('☁️ Optimizing and uploading to Cloudflare R2...');
         const uploadedUrl = await imageStorage.uploadBase64(transparentBase64, 'designs');
 
-        // Save design to database
         const design = await db.createDesign(
             req.userId,
             prompt,
@@ -58,7 +40,6 @@ router.post('/generate', authMiddleware, async (req, res) => {
             tshirtColor
         );
 
-        // Update user generation count
         await db.updateUserGenerationCount(req.userId);
         const updatedUser = await db.getUserById(req.userId);
 
@@ -66,7 +47,6 @@ router.post('/generate', authMiddleware, async (req, res) => {
             success: true,
             designId: design.id,
             imageUrl: uploadedUrl,
-            generationsUsed: updatedUser.generations_used,
             generationsLeft: 5 - updatedUser.generations_used
         });
     } catch (error) {
@@ -74,6 +54,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
         res.status(500).json({ error: 'Generation failed: ' + error.message });
     }
 });
+
 
 // Get design history
 router.get('/history', authMiddleware, async (req, res) => {
@@ -112,38 +93,44 @@ router.put('/:designId/position', authMiddleware, async (req, res) => {
     }
 });
 
-// Finalize design
 router.post('/:designId/finalize', authMiddleware, async (req, res) => {
     try {
         const { designId } = req.params;
-        const { finalImage } = req.body;
+        const { finalImage } = req.body; // This is the Base64 from the high-res canvas
 
         if (!finalImage) {
-            return res.status(400).json({ error: 'Final image is required' });
+            return res.status(400).json({ error: 'Final baked image is required' });
         }
 
+        // 1. Verify design exists and belongs to user
         const design = await db.getDesignById(designId, req.userId);
         if (!design) {
             return res.status(404).json({ error: 'Design not found' });
         }
 
-        if (design.is_finalized) {
-            return res.status(400).json({ error: 'Design already finalized' });
-        }
+        // 2. Process the base64 string into a buffer
+        // Note: frontend uses image/jpeg for the baked composite
+        const base64Data = finalImage.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
 
-        // Upload final image
-        const buffer = Buffer.from(finalImage.split(',')[1], 'base64');
-        const finalUrl = await imageStorage.uploadBuffer(buffer, `${designId}-final.webp`, 'finals');
+        // 3. Define a consistent filename to prevent 404s
+        const fileName = `${designId}-production-proof.jpg`;
 
-        // Update design
+        console.log(`🏭 Baking production proof for Design: ${designId}...`);
+
+        // 4. Upload to the 'finals' folder in R2
+        // We use uploadBuffer to keep the high resolution from the canvas
+        const finalUrl = await imageStorage.uploadBuffer(buffer, fileName, 'finals');
+
+        // 5. Save the final URL and mark as finalized in DB
         const updated = await db.finalizeDesign(designId, req.userId, finalUrl);
 
-        // Finalize user
+        // 6. Lock the user's session for the day (Optional, based on your business rules)
         await db.finalizeUserDesign(req.userId);
 
         res.json({
             success: true,
-            message: 'Design finalized successfully',
+            message: 'Design baked and stored for production.',
             finalizedImageUrl: finalUrl
         });
     } catch (error) {

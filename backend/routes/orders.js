@@ -14,10 +14,14 @@ router.post('/buy-now', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Design ID is required' });
         }
 
-        // Verify design belongs to user
+        // Verify design belongs to user and is finalized
         const design = await db.getDesignById(designId, req.userId);
         if (!design) {
             return res.status(404).json({ error: 'Design not found' });
+        }
+
+        if (!design.is_finalized) {
+            return res.status(400).json({ error: 'Design must be finalized before purchase' });
         }
 
         // Create order
