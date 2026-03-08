@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -61,7 +61,7 @@
     </header>
 
     <main class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
-        
+
         <section class="w-full h-[55vh] md:h-full md:flex-1 relative bg-[#0f0f0f] flex items-center justify-center overflow-hidden shrink-0 min-h-0">
             <div class="absolute inset-0 opacity-10 grid-bg"></div>
 
@@ -78,9 +78,10 @@
         </section>
 
         <aside class="w-full md:w-[400px] border-t md:border-t-0 md:border-l border-white/10 flex flex-col z-40 sidebar-bg shrink-0 h-full">
-            
+
+            <!-- Select Color -->
             <div class="p-4 md:p-6 border-b border-white/10 shrink-0">
-                <h2 class="text-xs md:text-sm uppercase tracking-widest text-gray-400 mb-4 serif">Select Fabric</h2>
+                <h2 class="text-xs md:text-sm uppercase tracking-widest text-gray-400 mb-4 serif">Select Color</h2>
                 <div class="flex gap-4">
                     <button data-src="assets/black-tshirt.png" class="color-btn w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#1a1a1a] border border-white/20 hover:scale-110 transition-transform ring-2 ring-transparent focus:ring-yellow-600" title="Midnight Black"></button>
                     <button data-src="assets/white-tshirt.png" class="color-btn w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#f5f5f5] border border-white/20 hover:scale-110 transition-transform ring-2 ring-transparent focus:ring-yellow-600" title="Pure White"></button>
@@ -89,8 +90,9 @@
                 </div>
             </div>
 
+            <!-- Design Prompt & Action Buttons -->
             <div class="p-4 md:p-6 flex flex-col gap-4 shrink-0">
-                <h2 class="text-xs md:text-sm uppercase tracking-widest text-gray-400 serif">Art Direction</h2>
+                <h2 class="text-xs md:text-sm uppercase tracking-widest text-gray-400 serif">Design Prompt</h2>
                 <textarea id="prompt-input" class="w-full bg-[#111] border border-white/10 rounded p-4 text-sm md:text-base text-white placeholder-gray-600 focus:outline-none focus:border-yellow-600 transition-colors resize-none h-20 md:h-28" placeholder="Describe your vision..."></textarea>
 
                 <button id="generate-btn" class="w-full py-3 md:py-4 bg-white text-black text-sm md:text-base font-medium tracking-widest uppercase hover:bg-yellow-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
@@ -103,17 +105,37 @@
                 </button>
             </div>
 
-            <div class="flex-1 border-t border-white/10 flex flex-col bg-[#0f0f0f] min-h-0">
-                <div class="p-4 border-b border-white/5 flex justify-between items-center shrink-0">
-                    <h3 class="text-[10px] md:text-xs uppercase tracking-widest text-gray-500 serif">Design Archives</h3>
-                    <span class="text-[9px] md:text-[10px] text-gray-600">Click to restore</span>
-                </div>
-                <div id="history-list" class="flex-1 overflow-y-auto p-4 grid grid-cols-4 gap-2 content-start">
-                    <div class="col-span-4 text-center text-gray-600 text-xs py-4 md:py-8 italic" id="empty-history">No designs generated yet.</div>
-                </div>
+            <!-- Design Archives - Text Button at bottom -->
+            <div class="flex-1 flex flex-col justify-center p-4 md:p-6 border-t border-white/10 shrink-0">
+                <button id="archives-btn" class="archives-btn w-full text-center -mt-5">
+                    <span class="text-xs md:text-sm uppercase tracking-widest text-gray-400 serif">Design Archives</span>
+                </button>
             </div>
         </aside>
     </main>
+
+    <!-- Archives Modal Popup -->
+    <div id="archives-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] hidden flex items-end md:items-center justify-center md:p-4">
+        <div class="bg-[#111] border border-white/10 rounded-t-xl md:rounded-xl w-full max-w-lg overflow-hidden flex flex-col md:max-h-[400px]">
+            <div class="p-4 border-b border-white/10 flex justify-between items-center">
+                <h3 class="serif text-xl text-white">Design Archives</h3>
+                <button id="close-archives-btn" class="text-gray-400 hover:text-white transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Grid Container: 3 cols, scrollable -->
+            <div id="archives-grid" class="grid grid-cols-3 gap-3 p-4 overflow-y-auto max-h-[280px] md:max-h-[280px]">
+                <!-- History items injected here -->
+            </div>
+
+            <div id="empty-archives" class="p-8 text-center text-gray-500 text-sm hidden">
+                No designs generated yet.
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>

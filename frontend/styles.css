@@ -1,11 +1,11 @@
-body { 
-    font-family: 'Inter', sans-serif; 
-    background-color: #0a0a0a; 
-    color: #e5e5e5; 
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0a0a0a;
+    color: #e5e5e5;
 }
 
-h1, h2, h3, .serif { 
-    font-family: 'Playfair Display', serif; 
+h1, h2, h3, .serif {
+    font-family: 'Playfair Display', serif;
 }
 
 .header-bg, .sidebar-bg {
@@ -13,7 +13,7 @@ h1, h2, h3, .serif {
 }
 
 .grid-bg {
-    background-image: radial-gradient(#333 1px, transparent 1px); 
+    background-image: radial-gradient(#333 1px, transparent 1px);
     background-size: 40px 40px;
 }
 
@@ -24,12 +24,11 @@ h1, h2, h3, .serif {
 ::-webkit-scrollbar-thumb:hover { background: #555; }
 
 /* T-Shirt Base Image Styles */
-/* T-Shirt Base Image Styles */
 .tshirt-base {
     transition: opacity 0.3s ease;
-    transform: scale(1.15); /* Dialed back from 1.35 */
-    transform-origin: center center; /* Centers the scale perfectly */
-    object-fit: contain; /* Ensures the whole shirt stays in frame */
+    transform: scale(1.15);
+    transform-origin: center center;
+    object-fit: contain;
 }
 
 /* Drag & Resize Interactions */
@@ -44,7 +43,7 @@ h1, h2, h3, .serif {
 .resize-handle {
     width: 14px;
     height: 14px;
-    background: #d4af37; /* Gold accent */
+    background: #d4af37;
     border: 2px solid #000;
     position: absolute;
     bottom: -7px;
@@ -54,7 +53,7 @@ h1, h2, h3, .serif {
     z-index: 50;
     border-radius: 50%;
 }
-.design-container:hover .resize-handle, 
+.design-container:hover .resize-handle,
 .design-container.active .resize-handle {
     display: block;
 }
@@ -68,7 +67,79 @@ h1, h2, h3, .serif {
     height: 20px;
     animation: spin 1s linear infinite;
 }
-@keyframes spin { 
-    0% { transform: rotate(0deg); } 
-    100% { transform: rotate(360deg); } 
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Design Archives Text Button */
+.archives-btn {
+    background: transparent;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    padding: 8px 0;
+    cursor: pointer;
+}
+
+.archives-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #d4af37, transparent);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.archives-btn:hover {
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.archives-btn:hover::after {
+    width: 80%;
+}
+
+.archives-btn:hover span {
+    color: #d4af37;
+}
+
+.archives-btn span {
+    position: relative;
+    z-index: 1;
+    transition: color 0.3s ease;
+}
+
+/* Archives Modal Styles */
+#archives-modal {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#archives-modal:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Grid inside Modal */
+#archives-grid {
+    scrollbar-width: thin;
+    scrollbar-color: #333 #1a1a1a;
+}
+
+#archives-grid img {
+    aspect-ratio: 1/1;
+    object-fit: cover;
+    border-radius: 4px;
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+#archives-grid img:hover {
+    transform: scale(1.05);
+    border-color: #d4af37;
 }
