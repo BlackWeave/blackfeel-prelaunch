@@ -113,19 +113,19 @@ h1, h2, h3, .serif {
 }
 
 /* Archives Modal Styles */
-#archives-modal {
+#archives-modal, #orders-modal {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-#archives-modal:not(.hidden) {
+#archives-modal:not(.hidden), #orders-modal:not(.hidden) {
     opacity: 1;
     visibility: visible;
 }
 
 /* Grid inside Modal */
-#archives-grid {
+#archives-grid, #orders-list {
     scrollbar-width: thin;
     scrollbar-color: #333 #1a1a1a;
 }

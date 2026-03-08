@@ -47,7 +47,14 @@ const DOM = {
     archivesModal: document.getElementById('archives-modal'),
     closeArchivesBtn: document.getElementById('close-archives-btn'),
     archivesGrid: document.getElementById('archives-grid'),
-    emptyArchives: document.getElementById('empty-archives')
+    emptyArchives: document.getElementById('empty-archives'),
+
+    // Orders Modal
+    ordersModal: document.getElementById('orders-modal'),
+    closeOrdersBtn: document.getElementById('close-orders-btn'),
+    ordersList: document.getElementById('orders-list'),
+    emptyOrders: document.getElementById('empty-orders'),
+    shopNowBtn: document.getElementById('shop-now-btn')
 };
 
 // --- Initialization ---
@@ -91,10 +98,24 @@ function setupEventListeners() {
         DOM.archivesModal.classList.add('hidden');
     });
     
-    // Close modal on outside click
-    DOM.archivesModal.addEventListener('click', (e) => {
+    // Orders Modal
+    DOM.closeOrdersBtn.addEventListener('click', () => {
+        DOM.ordersModal.classList.add('hidden');
+    });
+
+    if (DOM.shopNowBtn) {
+        DOM.shopNowBtn.addEventListener('click', () => {
+            DOM.ordersModal.classList.add('hidden');
+        });
+    }
+
+    // Close modals on outside click
+    window.addEventListener('click', (e) => {
         if (e.target === DOM.archivesModal) {
             DOM.archivesModal.classList.add('hidden');
+        }
+        if (e.target === DOM.ordersModal) {
+            DOM.ordersModal.classList.add('hidden');
         }
     });
 
@@ -243,9 +264,108 @@ function handleLogout() {
     window.location.reload();
 }
 
-function handleMyOrders() {
-    // TODO: Implement My Orders functionality
-    alert('My Orders - Coming soon!');
+async function handleMyOrders() {
+    if (!state.token) {
+        showAuthModal();
+        return;
+    }
+
+    DOM.ordersModal.classList.remove('hidden');
+    DOM.ordersList.innerHTML = '<div class="p-12 text-center text-gray-500 text-sm">Loading orders...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}/orders`, {
+            headers: { 'Authorization': `Bearer ${state.token}` }
+        });
+
+        if (response.ok) {
+            const orders = await response.json();
+            renderOrders(orders);
+        } else {
+            const data = await response.json();
+            DOM.ordersList.innerHTML = `<div class="p-12 text-center text-red-500 text-sm">${data.error || 'Failed to load orders'}</div>`;
+        }
+    } catch (error) {
+        console.error('Failed to load orders:', error);
+        DOM.ordersList.innerHTML = '<div class="p-12 text-center text-red-500 text-sm">Connection error</div>';
+    }
+}
+
+function renderOrders(orders) {
+    if (orders.length === 0) {
+        DOM.emptyOrders.classList.remove('hidden');
+        DOM.ordersList.classList.add('hidden');
+        return;
+    }
+
+    DOM.emptyOrders.classList.add('hidden');
+    DOM.ordersList.classList.remove('hidden');
+    DOM.ordersList.innerHTML = '';
+
+    orders.forEach(order => {
+        const date = new Date(order.created_at).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+
+        const statusColors = {
+            'draft': 'bg-gray-500/20 text-gray-400',
+            'payment_pending': 'bg-yellow-500/20 text-yellow-500',
+            'paid': 'bg-green-500/20 text-green-500',
+            'production': 'bg-blue-500/20 text-blue-500',
+            'shipped': 'bg-indigo-500/20 text-indigo-500',
+            'delivered': 'bg-green-600/20 text-green-400'
+        };
+
+        const statusLabel = order.status.replace('_', ' ').toUpperCase();
+        
+        // Use finalized_image_url (full mockup) or processed_image_url (transparent design)
+        let displayImageUrl = order.finalized_image_url || order.processed_image_url;
+        
+        // Ensure URL is valid and absolute
+        if (displayImageUrl && !displayImageUrl.startsWith('http')) {
+            // Fallback for relative paths if any
+            displayImageUrl = displayImageUrl.startsWith('/') ? displayImageUrl : `/${displayImageUrl}`;
+        }
+
+        const orderCard = document.createElement('div');
+        orderCard.className = 'bg-[#1a1a1a] border border-white/10 rounded-lg overflow-hidden flex flex-col md:flex-row min-h-[120px]';
+        
+        orderCard.innerHTML = `
+            <div class="w-full md:w-32 bg-[#0f0f0f] flex items-center justify-center p-2 shrink-0">
+                ${displayImageUrl ? 
+                    `<img src="${displayImageUrl}" 
+                          class="max-w-full max-h-full object-contain drop-shadow-lg" 
+                          alt="Order Design"
+                          onerror="this.src='assets/black-tshirt.png'; this.style.opacity='0.5';">` : 
+                    `<div class="w-full h-full bg-gray-800 flex items-center justify-center text-[10px] text-gray-500">NO IMAGE</div>`
+                }
+            </div>
+            <div class="flex-1 p-4 flex flex-col justify-between">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <div class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">${date}</div>
+                        <h4 class="text-white text-sm font-medium">Order #${order.id.slice(0, 8).toUpperCase()}</h4>
+                        <div class="text-[10px] text-gray-500 mt-1 italic truncate max-w-[200px]">"${order.prompt}"</div>
+                    </div>
+                    <span class="text-[10px] px-2 py-1 rounded ${statusColors[order.status] || 'bg-gray-500/20 text-gray-400'} font-medium tracking-widest uppercase shrink-0">
+                        ${statusLabel}
+                    </span>
+                </div>
+                <div class="flex justify-between items-end">
+                    <div class="text-xs text-gray-400">
+                        <span class="uppercase font-bold">${order.tshirt_size}</span> • ${order.tshirt_quantity} Unit${order.tshirt_quantity > 1 ? 's' : ''}
+                    </div>
+                    <div class="text-yellow-600 font-medium tracking-widest text-sm">
+                        ₹${(order.amount_in_paise / 100).toFixed(2)}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        DOM.ordersList.appendChild(orderCard);
+    });
 }
 
 function showAuthError(message) {

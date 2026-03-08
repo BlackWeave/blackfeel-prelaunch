@@ -140,6 +140,29 @@
         </div>
     </div>
 
+    <!-- My Orders Modal -->
+    <div id="orders-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] hidden flex items-end md:items-center justify-center md:p-4">
+        <div class="bg-[#111] border border-white/10 rounded-t-xl md:rounded-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-4 border-b border-white/10 flex justify-between items-center">
+                <h3 class="serif text-xl text-white">My Orders</h3>
+                <button id="close-orders-btn" class="text-gray-400 hover:text-white transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div id="orders-list" class="p-4 overflow-y-auto space-y-4">
+                <!-- Orders injected here -->
+            </div>
+
+            <div id="empty-orders" class="p-12 text-center text-gray-500 text-sm hidden">
+                <p class="mb-4">No orders placed yet.</p>
+                <button id="shop-now-btn" class="text-yellow-600 hover:underline uppercase tracking-widest text-xs">Start Designing</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>

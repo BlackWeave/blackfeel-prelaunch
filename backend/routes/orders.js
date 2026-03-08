@@ -145,4 +145,15 @@ router.get('/:orderId', authMiddleware, async (req, res) => {
     }
 });
 
+// Get user orders list
+router.get('/', authMiddleware, async (req, res) => {
+    try {
+        const orders = await db.getOrdersByUserId(req.userId);
+        res.json(orders);
+    } catch (error) {
+        console.error('Get orders error:', error);
+        res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+});
+
 export default router;

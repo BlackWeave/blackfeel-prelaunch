@@ -220,7 +220,27 @@ async createFulfillmentJob(orderId) {
             `UPDATE webhook_events SET processed = true WHERE razorpay_event_id = $1`,
             [razorpayEventId]
         );
-    }
+    },
 
-    
+    async getOrdersByUserId(userId) {
+        const result = await pool.query(
+            `SELECT 
+                o.id, 
+                o.amount_in_paise, 
+                o.status, 
+                o.tshirt_size, 
+                o.tshirt_quantity, 
+                o.created_at,
+                d.processed_image_url, 
+                d.finalized_image_url, 
+                d.tshirt_color, 
+                d.prompt
+             FROM orders o
+             JOIN designs d ON o.design_id = d.id
+             WHERE o.user_id = $1
+             ORDER BY o.created_at DESC`,
+            [userId]
+        );
+        return result.rows;
+    }
 };
