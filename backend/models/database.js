@@ -215,6 +215,51 @@ async createFulfillmentJob(orderId) {
     );
 },
 
+    async createManualOrder({ userId, designId, name, email, address, size, finalizedUrl, amount }) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 1. Get the original design details for the fulfillment queue
+            const designRes = await client.query('SELECT * FROM designs WHERE id = $1', [designId]);
+            const design = designRes.rows[0];
+            if (!design) throw new Error('Design not found');
+
+            // 2. Insert into the orders table
+            const orderQuery = `
+                INSERT INTO orders (
+                    user_id, design_id, amount_in_paise, status, 
+                    tshirt_size, shipping_address, customer_name, customer_email
+                ) VALUES ($1, $2, $3, 'payment_pending', $4, $5, $6, $7)
+                RETURNING id, amount_in_paise, status
+            `;
+            const orderValues = [userId, designId, amount, size, JSON.stringify({ text: address }), name, email];
+            const orderRes = await client.query(orderQuery, orderValues);
+            const orderId = orderRes.rows[0].id;
+
+            // 3. Insert into fulfillment_queue for the printer
+            const fulfillmentQuery = `
+                INSERT INTO fulfillment_queue (
+                    order_id, design_id, tshirt_color, tshirt_size, 
+                    print_mockup_url, raw_design_url
+                ) VALUES ($1, $2, $3, $4, $5, $6)
+            `;
+            const fulfillmentValues = [
+                orderId, designId, design.tshirt_color, size, 
+                finalizedUrl, design.processed_image_url
+            ];
+            await client.query(fulfillmentQuery, fulfillmentValues);
+
+            await client.query('COMMIT');
+            return { orderId, amountInPaise: orderRes.rows[0].amount_in_paise };
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+    },
+
     async markWebhookProcessed(razorpayEventId) {
         await pool.query(
             `UPDATE webhook_events SET processed = true WHERE razorpay_event_id = $1`,

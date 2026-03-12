@@ -5,6 +5,34 @@ import { razorpayService } from '../services/razorpay.js';
 
 const router = express.Router();
 
+// Manual order endpoint (QR-code payment flow)
+router.post('/manual', authMiddleware, async (req, res) => {
+    try {
+        const { designId, size, name, email, address, finalizedImageUrl } = req.body;
+
+        if (!designId || !size || !name || !email || !address || !finalizedImageUrl) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const result = await db.createManualOrder({
+            userId: req.userId,
+            designId,
+            name,
+            email,
+            address,
+            size,
+            finalizedUrl: finalizedImageUrl,
+            amount: 199500 // Flat ₹1995 in paise
+        });
+
+        res.json({ success: true, orderId: result.orderId, amountInPaise: result.amountInPaise });
+    } catch (error) {
+        console.error('Manual order error:', error);
+        res.status(500).json({ error: 'Failed to save order: ' + error.message });
+    }
+});
+
+
 // Quick buy-now endpoint (simplified checkout)
 router.post('/buy-now', authMiddleware, async (req, res) => {
     try {

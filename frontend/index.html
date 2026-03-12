@@ -6,7 +6,6 @@
     <title>LUXE | AI T-Shirt Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -160,6 +159,27 @@
                 <p class="mb-4">No orders placed yet.</p>
                 <button id="shop-now-btn" class="text-yellow-600 hover:underline uppercase tracking-widest text-xs">Start Designing</button>
             </div>
+        </div>
+    </div>
+
+    <div id="shipping-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-[#111] border border-white/10 rounded-xl p-6 w-full max-w-md">
+            <h3 class="serif text-xl mb-4 text-white">Shipping Details</h3>
+            <input type="text" id="ship-name" placeholder="Full Name" class="w-full bg-[#0a0a0a] border border-white/10 rounded p-3 mb-3 text-white outline-none focus:border-yellow-600">
+            <input type="email" id="ship-email" placeholder="Email" class="w-full bg-[#0a0a0a] border border-white/10 rounded p-3 mb-3 text-white outline-none focus:border-yellow-600">
+            <textarea id="ship-address" placeholder="Complete Address" class="w-full bg-[#0a0a0a] border border-white/10 rounded p-3 mb-6 text-white h-24 outline-none focus:border-yellow-600 resize-none"></textarea>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('shipping-modal').classList.add('hidden')" class="flex-1 py-3 text-gray-400 bg-[#222] rounded-lg">Cancel</button>
+                <button id="save-order-btn" class="flex-1 bg-yellow-600 text-black font-bold py-3 rounded-lg">SAVE & PROCEED</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="success-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] hidden flex items-center justify-center p-4">
+        <div class="bg-[#111] border border-yellow-600/30 rounded-xl p-8 w-full max-w-sm text-center">
+            <h3 class="serif text-2xl mb-4 text-white">Order Saved!</h3>
+            <p class="text-gray-300 mb-8">Please scan the physical QR code at the counter to pay ₹1995. Your order will start production once verified.</p>
+            <button onclick="location.reload()" class="w-full bg-white text-black py-3 rounded-lg font-bold uppercase tracking-widest">I Have Paid</button>
         </div>
     </div>
 

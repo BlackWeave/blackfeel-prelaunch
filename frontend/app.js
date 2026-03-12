@@ -766,118 +766,74 @@ function showSizeModal() {
             return;
         }
         
-        const proceedBtn = document.getElementById('proceed-buy-btn');
-        proceedBtn.disabled = true;
-        proceedBtn.textContent = 'Finalizing...';
-        
-        try {
-            await finalizeDesignOnServer();
-            modal.remove();
-            initiateCheckout(selectedSize);
-        } catch (error) {
-            alert('Failed to finalize design: ' + error.message);
-            proceedBtn.disabled = false;
-            proceedBtn.textContent = 'Proceed';
-        }
+        modal.remove();
+        showShippingModal(selectedSize);
     });
 }
 
-async function initiateCheckout(tshirtSize) {
-    try {
-        const orderResponse = await fetch(`${API_BASE}/orders/buy-now`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.token}`
-            },
-            body: JSON.stringify({
-                designId: state.currentDesign.id,
-                tshirtSize: tshirtSize,
-                quantity: 1
-            })
-        });
+function showShippingModal(size) {
+    const modal = document.getElementById('shipping-modal');
+    modal.classList.remove('hidden');
 
-        const orderData = await orderResponse.json();
+    // Clear any previous inputs
+    document.getElementById('ship-name').value = '';
+    document.getElementById('ship-email').value = '';
+    document.getElementById('ship-address').value = '';
 
-        if (!orderResponse.ok) {
-            throw new Error(orderData.error || 'Failed to create order');
+    const saveBtn = document.getElementById('save-order-btn');
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'SAVE & PROCEED';
+
+    saveBtn.onclick = async () => {
+        const name = document.getElementById('ship-name').value.trim();
+        const email = document.getElementById('ship-email').value.trim();
+        const address = document.getElementById('ship-address').value.trim();
+
+        if (!name || !email || !address) {
+            alert('Please fill all fields');
+            return;
         }
 
-        const paymentResponse = await fetch(`${API_BASE}/orders/initiate-payment`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.token}`
-            },
-            body: JSON.stringify({
-                orderId: orderData.orderId
-            })
-        });
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Processing...';
 
-        const paymentData = await paymentResponse.json();
+        try {
+            // 1. Bake the image and upload to Cloudflare
+            const finalizedImageUrl = await finalizeDesignOnServer();
 
-        if (!paymentResponse.ok) {
-            throw new Error(paymentData.error || 'Failed to initiate payment');
-        }
+            // 2. Save to local DB
+            const response = await fetch(`${API_BASE}/orders/manual`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.token}`
+                },
+                body: JSON.stringify({
+                    designId: state.currentDesign.id,
+                    size,
+                    name,
+                    email,
+                    address,
+                    finalizedImageUrl
+                })
+            });
 
-        const options = {
-            key: paymentData.key,
-            amount: paymentData.amount,
-            currency: paymentData.currency,
-            name: 'LUXE.AI',
-            description: 'T-Shirt Purchase',
-            order_id: paymentData.razorpayOrderId,
-            handler: function(response) {
-                verifyPayment(response, orderData.orderId);
-            },
-            prefill: {
-                name: state.user?.name || '',
-                email: state.user?.email || '',
-                contact: state.user?.phone || ''
-            },
-            theme: {
-                color: '#ca8a04'
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to save order');
             }
-        };
 
-        const rzp = new Razorpay(options);
-        rzp.on('payment.failed', function(response) {
-            alert('Payment failed: ' + response.error.description);
-        });
-        rzp.open();
-
-    } catch (error) {
-        console.error('Checkout error:', error);
-        alert(error.message || 'Failed to proceed with checkout');
-    }
-}
-
-async function verifyPayment(paymentResponse, orderId) {
-    try {
-        const response = await fetch(`${API_BASE}/payments/verify`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.token}`
-            },
-            body: JSON.stringify({
-                razorpayOrderId: paymentResponse.razorpay_order_id,
-                razorpayPaymentId: paymentResponse.razorpay_payment_id,
-                razorpaySignature: paymentResponse.razorpay_signature
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            alert('Payment successful! Your order has been placed.');
-        } else {
-            throw new Error(data.error || 'Payment verification failed');
+            // 3. Hide shipping modal, show success modal
+            modal.classList.add('hidden');
+            document.getElementById('success-modal').classList.remove('hidden');
+        } catch (err) {
+            console.error('Order save error:', err);
+            alert('Error saving order: ' + err.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'SAVE & PROCEED';
         }
-    } catch (error) {
-        console.error('Payment verification error:', error);
-        alert(error.message || 'Payment verification failed');
-    }
+    };
 }
 
 // --- Professional Drag & Resize Engine (Interact.js) ---
