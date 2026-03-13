@@ -7,15 +7,15 @@ export const openRouterService = {
             const response = await axios.post(
                 'https://openrouter.ai/api/v1/chat/completions',
                 {
-                    model: 'google/gemini-2.5-flash-image',
+                    model: 'google/gemini-3.1-flash-image-preview',
                     messages: [
                         {
                             role: 'user',
-                            content: `${prompt}, professional t-shirt design, vector art, clean background, high quality`
+                            content: `${prompt}, t-shirt graphic design ONLY, isolated design element, NO t-shirt mockup, transparent background, vector art style, clean edges, high quality`
                         }
                     ],
                     // FIX: Must include both for Gemini to trigger image generation
-                    modalities: ["image", "text"] 
+                    modalities: ["image", "text"]
                 },
                 {
                     headers: {

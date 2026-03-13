@@ -52,7 +52,10 @@ const DOM = {
     closeOrdersBtn: document.getElementById('close-orders-btn'),
     ordersList: document.getElementById('orders-list'),
     emptyOrders: document.getElementById('empty-orders'),
-    shopNowBtn: document.getElementById('shop-now-btn')
+    shopNowBtn: document.getElementById('shop-now-btn'),
+
+    // Remove Design Button
+    removeDesignBtn: document.getElementById('remove-design-btn')
 };
 
 // --- Initialization ---
@@ -139,9 +142,12 @@ function setupEventListeners() {
 
     // Generate button
     DOM.generateBtn.addEventListener('click', generateDesign);
-    
+
     // Buy Now button
     DOM.buyNowBtn.addEventListener('click', handleBuyNow);
+
+    // Remove Design button
+    DOM.removeDesignBtn.addEventListener('click', removeDesign);
 }
 
 // --- Authentication Functions ---
@@ -466,10 +472,21 @@ function loadDesignToCanvas(design) {
     DOM.generatedImage.src = design.url;
     DOM.designWrapper.classList.remove('hidden');
     applyTransform(design.x, design.y, design.scale);
-    
+
     // Show BUY NOW button
     if (DOM.buyNowBtn) {
         DOM.buyNowBtn.classList.remove('hidden');
+    }
+}
+
+function removeDesign() {
+    state.currentDesign = null;
+    DOM.generatedImage.src = '';
+    DOM.designWrapper.classList.add('hidden');
+
+    // Hide BUY NOW button
+    if (DOM.buyNowBtn) {
+        DOM.buyNowBtn.classList.add('hidden');
     }
 }
 
