@@ -19,10 +19,6 @@ router.post('/generate', authMiddleware, async (req, res) => {
         const user = await db.getUserById(req.userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        if (user.generations_used >= 5) {
-            return res.status(403).json({ error: 'Daily limit reached' });
-        }
-
         console.log('✨ Generating image with Gemini 2.5 via OpenRouter...');
         const base64DataUrl = await openRouterService.generateImage(prompt);
         

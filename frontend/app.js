@@ -5,7 +5,6 @@ const API_BASE = '/api';
 const state = {
     token: localStorage.getItem('luxe_token'),
     user: null,
-    generationsLeft: 5,
     currentDesign: null,
     currentTshirtColor: '#1a1a1a',
     history: []
@@ -36,7 +35,6 @@ const DOM = {
     promptInput: document.getElementById('prompt-input'),
     generateBtn: document.getElementById('generate-btn'),
     btnLoader: document.getElementById('btn-loader'),
-    rateLimitDisplay: document.getElementById('rate-limit-display'),
     designWrapper: document.getElementById('design-wrapper'),
     generatedImage: document.getElementById('generated-image'),
     resizeHandle: document.getElementById('resize-handle'),
@@ -155,7 +153,6 @@ async function checkAuth() {
 
         if (response.ok) {
             state.user = await response.json();
-            state.generationsLeft = 5 - state.user.generationsUsed;
             showApp();
             loadHistory();
         } else {
@@ -205,7 +202,6 @@ async function handleLogin() {
             state.token = data.token;
             state.user = data.user;
             localStorage.setItem('luxe_token', state.token);
-            state.generationsLeft = 5 - state.user.generationsUsed;
             showApp();
             loadHistory();
         } else {
@@ -244,7 +240,6 @@ async function handleRegister() {
             state.token = data.token;
             state.user = data.user;
             localStorage.setItem('luxe_token', state.token);
-            state.generationsLeft = 5 - state.user.generationsUsed;
             showApp();
             loadHistory();
         } else {
@@ -380,13 +375,6 @@ function showAuthError(message) {
 
 function updateUI() {
     if (state.user) {
-        DOM.rateLimitDisplay.textContent = state.generationsLeft;
-
-        if (state.generationsLeft <= 0) {
-            DOM.generateBtn.disabled = true;
-            DOM.generateBtn.querySelector('span').textContent = 'Limit Reached';
-        }
-
         // Show BUY NOW button if there's a current design
         if (state.currentDesign) {
             DOM.buyNowBtn.classList.remove('hidden');
@@ -469,16 +457,6 @@ function handleNewDesign(url, promptText, data) {
     state.history.unshift(newDesign);
     if (state.history.length > 5) state.history.pop();
 
-    if (data && data.generationsLeft !== undefined) {
-        state.generationsLeft = data.generationsLeft;
-        DOM.rateLimitDisplay.textContent = state.generationsLeft;
-
-        if (state.generationsLeft <= 0) {
-            DOM.generateBtn.disabled = true;
-            DOM.generateBtn.querySelector('span').textContent = 'Limit Reached';
-        }
-    }
-
     renderHistory();
     loadDesignToCanvas(newDesign);
 }
@@ -551,10 +529,6 @@ async function loadHistory() {
         if (response.ok) {
             const data = await response.json();
             state.history = data.designs || [];
-            if(data.generationsUsed !== undefined) {
-                state.generationsLeft = 5 - data.generationsUsed;
-                DOM.rateLimitDisplay.textContent = state.generationsLeft;
-            }
 
             renderHistory();
         }
