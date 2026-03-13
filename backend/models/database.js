@@ -101,8 +101,8 @@ export const db = {
 
     // Orders
     async createOrder(userId, designId, tshirtSize, quantity, customText) {
-        // Pricing: Base ₹499, +₹299 per size tier, +₹100 custom text
-        let basePrice = 49900; // ₹499 in paise
+        // Pricing: Base ₹1995, +₹299 per size tier, +₹100 custom text
+        let basePrice = 199500; // ₹1995 in paise
         if (tshirtSize && ['L', 'XL', 'XXL'].includes(tshirtSize)) basePrice += 29900;
         if (customText) basePrice += 10000;
         const totalPrice = basePrice * quantity;

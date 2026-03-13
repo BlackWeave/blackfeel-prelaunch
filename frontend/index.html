@@ -51,11 +51,6 @@
             <div class="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-tr from-yellow-700 to-yellow-500 rounded-sm"></div>
             <h1 class="text-xl md:text-2xl tracking-widest text-white serif">LUXE<span class="text-yellow-600">.AI</span></h1>
         </div>
-        <div class="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-            <div class="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest">
-                Generations: <span id="rate-limit-display" class="text-white font-bold">5</span> Left
-            </div>
-        </div>
         <div class="flex items-center gap-4">
             <button id="my-orders-btn" class="text-[10px] md:text-xs text-gray-400 hover:text-white transition uppercase tracking-widest">My Orders</button>
             <button id="logout-btn" class="text-[10px] md:text-xs text-gray-400 hover:text-white transition uppercase tracking-widest hidden">Logout</button>
@@ -64,7 +59,7 @@
 
     <main class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
 
-        <section class="w-full h-[55vh] md:h-full md:flex-1 relative bg-[#0f0f0f] flex items-center justify-center overflow-hidden shrink-0 min-h-0">
+        <section class="w-full h-[55vh] md:h-full md:flex-1 relative bg-[#36454F] flex items-center justify-center overflow-hidden shrink-0 min-h-0">
             <div class="absolute inset-0 opacity-10 grid-bg"></div>
 
             <div class="relative w-full max-w-[400px] md:max-w-[500px] aspect-[5/6] max-h-full p-4 flex items-center justify-center transition-all duration-500">
@@ -103,7 +98,7 @@
                 </button>
 
                 <button id="buy-now-btn" class="w-full py-3 md:py-4 bg-yellow-600 text-black text-sm md:text-base font-medium tracking-widest uppercase hover:bg-yellow-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hidden">
-                    <span>BUY NOW - ₹499</span>
+                    <span>BUY NOW - <span class="line-through text-gray-800 text-xs">₹2199</span> ₹1995</span>
                 </button>
             </div>
 
