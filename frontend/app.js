@@ -1,5 +1,6 @@
 // --- Configuration ---
-const API_BASE = '/api';
+// API Base URL - uses window.API_BASE_URL if set (injected at build time), otherwise defaults to /api
+const API_BASE = window.API_BASE_URL || '/api';
 
 // --- State Management ---
 const state = {
