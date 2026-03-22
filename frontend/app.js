@@ -77,12 +77,16 @@ function setupEventListeners() {
         DOM.loginForm.classList.add('hidden');
         DOM.registerForm.classList.remove('hidden');
         DOM.authError.classList.add('hidden');
+        const regError = document.getElementById('auth-error-register');
+        if (regError) regError.classList.add('hidden');
     });
 
     DOM.showLoginBtn.addEventListener('click', () => {
         DOM.registerForm.classList.add('hidden');
         DOM.loginForm.classList.remove('hidden');
         DOM.authError.classList.add('hidden');
+        const regError = document.getElementById('auth-error-register');
+        if (regError) regError.classList.add('hidden');
     });
 
     DOM.logoutBtn.addEventListener('click', handleLogout);
@@ -215,7 +219,7 @@ async function handleLogin() {
             showApp();
             loadHistory();
         } else {
-            showAuthError(data.error || 'Login failed');
+            showAuthError(data.error || (data.errors ? data.errors[0].msg : 'Login failed'));
         }
     } catch (error) {
         showAuthError('Connection error');
@@ -228,12 +232,12 @@ async function handleRegister() {
     const password = DOM.registerPassword.value;
 
     if (!name || !email || !password) {
-        showAuthError('Please fill all fields');
+        showAuthError('Please fill all fields', true);
         return;
     }
 
     if (password.length < 6) {
-        showAuthError('Password must be at least 6 characters');
+        showAuthError('Password must be at least 6 characters', true);
         return;
     }
 
@@ -254,10 +258,14 @@ async function handleRegister() {
             showApp();
             loadHistory();
         } else {
-            showAuthError(data.error || 'Registration failed');
+            let errorMsg = data.error || 'Registration failed';
+            if (data.errors && data.errors.length > 0) {
+                errorMsg = data.errors[0].msg || errorMsg;
+            }
+            showAuthError(errorMsg, true);
         }
     } catch (error) {
-        showAuthError('Connection error');
+        showAuthError('Connection error', true);
     }
 }
 
@@ -370,10 +378,11 @@ function renderOrders(orders) {
     });
 }
 
-function showAuthError(message) {
-    if(DOM.authError) {
-        DOM.authError.textContent = message;
-        DOM.authError.classList.remove('hidden');
+function showAuthError(message, isRegister = false) {
+    const errorEl = isRegister ? document.getElementById('auth-error-register') : DOM.authError;
+    if(errorEl) {
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
     }
 }
 
@@ -511,12 +520,33 @@ async function generateDesign() {
 
         const imageUrl = data.imageUrl;
 
-        // Preload image
+        console.log('🎨 Generated design received:', imageUrl);
+
+        // Preload image with timeout and proper error handling
         await new Promise((resolve, reject) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            img.onload = resolve;
-            img.onerror = reject;
+            
+            const timeout = setTimeout(() => {
+                console.error('Image load timeout:', imageUrl);
+                reject(new Error('Image load timed out. Check your internet connection.'));
+            }, 15000); // 15 second timeout
+            
+            img.onload = () => {
+                clearTimeout(timeout);
+                console.log('✅ Image loaded successfully');
+                resolve(imageUrl);
+            };
+            
+            img.onerror = (e) => {
+                clearTimeout(timeout);
+                console.error('❌ Image load failed:', imageUrl);
+                console.error('Error event:', e);
+                console.error('Check if the URL is accessible by opening it directly in browser');
+                reject(new Error('Failed to load generated image. The server may be unreachable.'));
+            };
+            
+            console.log('🔄 Loading image from:', imageUrl);
             img.src = imageUrl;
         });
 
@@ -524,7 +554,13 @@ async function generateDesign() {
 
     } catch (error) {
         console.error('Generation failed:', error);
-        alert(error.message || 'Failed to generate design');
+        
+        // Handle image load errors specifically
+        if (error.message === 'Failed to load generated image') {
+            alert('Design was generated but the image could not be loaded. Please check your internet connection and try again.');
+        } else {
+            alert(error.message || 'Failed to generate design');
+        }
     } finally {
         setLoadingState(false);
     }
@@ -574,8 +610,12 @@ function handleNewDesign(url, promptText, data) {
 function loadDesignToCanvas(design) {
     state.currentDesign = design;
     DOM.generatedImage.src = design.url;
+    DOM.generatedImage.onerror = () => {
+        console.error('Failed to load design on canvas:', design.url);
+        alert('Failed to display design. Please try regenerating.');
+    };
     DOM.designWrapper.classList.remove('hidden');
-    
+
     // Apply position constraints
     applyTransform(design.x, design.y, design.scale);
 

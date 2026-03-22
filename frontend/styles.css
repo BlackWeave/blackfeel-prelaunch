@@ -479,3 +479,75 @@ h3,
   background-color: #e5e7eb;
   border-color: #d1d5db;
 }
+
+/* Authentication Modal specific styles */
+.hidden {
+  display: none !important;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.field input {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-family: inherit;
+  font-size: 0.95rem;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.field input:focus {
+  border-color: #111827;
+  box-shadow: 0 0 0 1px #11182740;
+}
+
+.auth-error {
+  color: #b91c1c;
+  font-size: 0.85rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 10px 12px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.auth-toggle {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 16px;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #111827;
+  font-weight: 600;
+  font-size: inherit;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}

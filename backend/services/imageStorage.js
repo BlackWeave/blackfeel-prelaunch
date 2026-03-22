@@ -37,7 +37,7 @@ export const imageStorage = {
                 }
             }));
 
-            const cdnUrl = `${process.env.CLOUDFLARE_R2_URL}/${fileName}`;
+            const cdnUrl = `${process.env.CLOUDFLARE_R2_PUBLIC_URL}/${fileName}`;
             return cdnUrl;
         } catch (error) {
             console.error('Image upload error:', error.message);
@@ -69,7 +69,7 @@ export const imageStorage = {
                 }
             }));
 
-            return `${process.env.CLOUDFLARE_R2_URL}/${fileName}`;
+            return `${process.env.CLOUDFLARE_R2_PUBLIC_URL}/${fileName}`;
         } catch (error) {
             console.error('Base64 upload error:', error.message);
             throw new Error('Failed to upload base64 image: ' + error.message);
@@ -90,7 +90,7 @@ export const imageStorage = {
                 }
             }));
 
-            const cdnUrl = `${process.env.CLOUDFLARE_R2_URL}/${key}`;
+            const cdnUrl = `${process.env.CLOUDFLARE_R2_PUBLIC_URL}/${key}`;
             return cdnUrl;
         } catch (error) {
             console.error('Buffer upload error:', error.message);
