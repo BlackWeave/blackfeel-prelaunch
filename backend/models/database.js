@@ -182,38 +182,45 @@ export const db = {
     },
 
     // Add to the 'db' object in backend/models/database.js
-async createFulfillmentJob(orderId) {
-    // 1. Fetch full details of the paid order
-    // Note: processed_image_url is the transparent design (after bg removal)
-    // finalized_image_url is the baked composite (t-shirt + design)
-    const orderQuery = `
+    async createFulfillmentJob(orderId) {
+        // 1. Fetch full details of the paid order
+        // Note: processed_image_url is the transparent design (after bg removal)
+        // finalized_image_url is the baked composite (t-shirt + design)
+        const orderQuery = `
         SELECT o.id as order_id, o.tshirt_size, d.id as design_id,
                d.tshirt_color, d.finalized_image_url, d.processed_image_url
         FROM orders o
         JOIN designs d ON o.design_id = d.id
         WHERE o.id = $1
     `;
-    const orderRes = await pool.query(orderQuery, [orderId]);
-    const details = orderRes.rows[0];
+        const orderRes = await pool.query(orderQuery, [orderId]);
+        const details = orderRes.rows[0];
 
-    // 2. Insert into the Fulfillment Queue
-    // raw_design_url = transparent PNG (processed_image_url) for printer
-    // print_mockup_url = baked composite (finalized_image_url) for reference
-    return await pool.query(
-        `INSERT INTO fulfillment_queue
+        // 2. Insert into the Fulfillment Queue
+        // raw_design_url = transparent PNG (processed_image_url) for printer
+        // print_mockup_url = baked composite (finalized_image_url) for reference
+        return await pool.query(
+            `INSERT INTO fulfillment_queue
          (order_id, design_id, tshirt_color, tshirt_size, print_mockup_url, raw_design_url)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id`,
-        [
-            details.order_id,
-            details.design_id,
-            details.tshirt_color,
-            details.tshirt_size,
-            details.finalized_image_url,
-            details.processed_image_url  // This is the transparent design
-        ]
-    );
-},
+            [
+                details.order_id,
+                details.design_id,
+                details.tshirt_color,
+                details.tshirt_size,
+                details.finalized_image_url,
+                details.processed_image_url  // This is the transparent design
+            ]
+        );
+    },
+
+    async updateFulfillmentRawDesignUrl(orderId, rawDesignUrl) {
+        return await pool.query(
+            `UPDATE fulfillment_queue SET raw_design_url = $1 WHERE order_id = $2`,
+            [rawDesignUrl, orderId]
+        );
+    },
 
     async markWebhookProcessed(razorpayEventId) {
         await pool.query(
@@ -242,5 +249,17 @@ async createFulfillmentJob(orderId) {
             [userId]
         );
         return result.rows;
+    },
+
+    // Add this to your 'db' object in backend/models/database.js
+    async getOrderWithDesign(razorpayOrderId) {
+        const result = await pool.query(
+            `SELECT o.*, d.processed_image_url 
+         FROM orders o 
+         JOIN designs d ON o.design_id = d.id 
+         WHERE o.razorpay_order_id = $1`,
+            [razorpayOrderId]
+        );
+        return result.rows[0];
     }
 };
