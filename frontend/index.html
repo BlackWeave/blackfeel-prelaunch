@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>March Studio – Custom Tee Designer</title>
@@ -9,21 +10,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500;600&display=swap"
-    rel="stylesheet"
-  />
+    rel="stylesheet" />
 
   <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-  
+
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body class="page-root">
   <header class="site-header header-bg">
     <div class="header-inner">
       <div class="brand-block">
-        <div class="brand-mark">M</div>
+        <img src="assets/logo.png" alt="BlackWeave Design" class="brand-mark" />
         <div class="brand-copy">
-          <span class="brand-name serif">March Studio</span>
-          <span class="brand-tagline">Quiet tees, your way.</span>
+          <span class="brand-name serif">BlackWeave Design</span>
+          <span class="brand-tagline">Fortune Favours the Bold.</span>
         </div>
       </div>
 
@@ -58,11 +59,8 @@
               Describe your design
             </label>
             <div class="prompt-row">
-              <textarea
-                id="prompt-input"
-                rows="3"
-                placeholder="Eg. A soft line-drawing of a coffee mug in warm brown ink"
-              ></textarea>
+              <textarea id="prompt-input" rows="3"
+                placeholder="Eg. A soft line-drawing of a coffee mug in warm brown ink"></textarea>
               <button id="generate-btn" class="btn-primary">
                 <span id="btn-loader" class="btn-loader hidden"></span>
                 <span class="btn-primary-text">Generate</span>
@@ -73,26 +71,10 @@
 
           <div class="color-palette">
             <span class="palette-label">Tee colour</span>
-            <button
-              class="color-btn is-active"
-              data-src="assets/white-tshirt.png"
-              aria-label="Pure White"
-            ></button>
-            <button
-              class="color-btn"
-              data-src="assets/black-tshirt.png"
-              aria-label="Classic Black"
-            ></button>
-            <button
-              class="color-btn"
-              data-src="assets/blue-tshirt.png"
-              aria-label="Sky"
-            ></button>
-            <button
-              class="color-btn"
-              data-src="assets/red-tshirt.png"
-              aria-label="Rust"
-            ></button>
+            <button class="color-btn is-active" data-src="assets/white-tshirt.png" aria-label="Pure White"></button>
+            <button class="color-btn" data-src="assets/black-tshirt.png" aria-label="Classic Black"></button>
+            <button class="color-btn" data-src="assets/blue-tshirt.png" aria-label="Sky"></button>
+            <button class="color-btn" data-src="assets/red-tshirt.png" aria-label="Rust"></button>
           </div>
 
           <button id="buy-now-btn" class="btn-secondary hidden">
@@ -102,15 +84,12 @@
 
         <div class="canvas-visual">
           <div id="design-wrapper" class="tshirt-shell">
-            <img
-              id="tshirt-base-img"
-              class="tshirt-base"
-              src="assets/white-tshirt.png"
-              alt="T-shirt base"
-            />
+            <img id="tshirt-base-img" class="tshirt-base" src="assets/white-tshirt.png" alt="T-shirt base" />
             <div id="generated-image-container" class="design-container hidden">
-              <img id="generated-image" src="" alt="Design" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;" />
-              <button id="remove-design-btn" class="remove-design-btn" aria-label="Remove design" title="Remove design">×</button>
+              <img id="generated-image" src="" alt="Design" crossorigin="anonymous"
+                style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;" />
+              <button id="remove-design-btn" class="remove-design-btn" aria-label="Remove design"
+                title="Remove design">×</button>
               <div class="resize-handle" id="resize-handle"></div>
             </div>
           </div>
@@ -139,7 +118,7 @@
         You haven’t saved any designs yet.
       </div>
       <div id="archives-grid" class="archives-grid">
-        </div>
+      </div>
     </div>
   </div>
 
@@ -159,7 +138,7 @@
         You haven’t ordered a tee yet.
       </div>
       <div id="orders-list" class="orders-list">
-        </div>
+      </div>
       <button id="shop-now-btn" class="btn-secondary">
         Start a new tee
       </button>
@@ -216,11 +195,7 @@
           <input id="register-password" type="password" autocomplete="new-password" />
         </div>
         <div id="auth-error-register" class="auth-error hidden"></div>
-        <button
-          type="button"
-          id="register-btn"
-          class="btn-primary btn-block"
-        >
+        <button type="button" id="register-btn" class="btn-primary btn-block">
           Create account
         </button>
         <p class="auth-toggle">
@@ -236,4 +211,5 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>

@@ -78,6 +78,7 @@ h3,
   font-weight: 500;
   background: #f9fafb;
   color: #111827;
+  object-fit: cover;
 }
 
 .brand-copy {
