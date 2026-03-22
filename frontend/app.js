@@ -40,6 +40,7 @@ const DOM = {
     designWrapper: document.getElementById('generated-image-container'),
     generatedImage: document.getElementById('generated-image'),
     resizeHandle: document.getElementById('resize-handle'), // Restored
+    removeDesignBtn: document.getElementById('remove-design-btn'),
     buyNowBtn: document.getElementById('buy-now-btn'),
     
     // Archives Modal
@@ -59,6 +60,11 @@ const DOM = {
 
 // --- Initialization ---
 async function init() {
+    // Ensure BUY NOW button is hidden initially
+    if (DOM.buyNowBtn) {
+        DOM.buyNowBtn.classList.add('hidden');
+    }
+    
     setupEventListeners();
     initInteractJS(); // Restored interact.js initialization
 
@@ -149,7 +155,12 @@ function setupEventListeners() {
 
     // Generate button
     DOM.generateBtn.addEventListener('click', generateDesign);
-    
+
+    // Remove design button
+    if (DOM.removeDesignBtn) {
+        DOM.removeDesignBtn.addEventListener('click', removeDesign);
+    }
+
     // Buy Now button
     if(DOM.buyNowBtn) {
         DOM.buyNowBtn.addEventListener('click', handleBuyNow);
@@ -397,11 +408,15 @@ function updateUI() {
             DOM.generateBtn.querySelector('.btn-primary-text').textContent = 'Limit Reached';
         }
 
-        // Show BUY NOW button if there's a current design
-        if (state.currentDesign && DOM.buyNowBtn) {
-            DOM.buyNowBtn.classList.remove('hidden');
-        } else if (DOM.buyNowBtn) {
-            DOM.buyNowBtn.classList.add('hidden');
+        // Show BUY NOW button ONLY if there's a current design
+        if (DOM.buyNowBtn) {
+            if (state.currentDesign) {
+                DOM.buyNowBtn.classList.remove('hidden');
+                DOM.buyNowBtn.disabled = false;
+            } else {
+                DOM.buyNowBtn.classList.add('hidden');
+                DOM.buyNowBtn.disabled = true;
+            }
         }
     }
 }
@@ -623,6 +638,28 @@ function loadDesignToCanvas(design) {
     if (DOM.buyNowBtn) {
         DOM.buyNowBtn.classList.remove('hidden');
     }
+}
+
+function removeDesign() {
+    // Clear the current design from state
+    state.currentDesign = null;
+    
+    // Remove the onerror handler to prevent false errors
+    DOM.generatedImage.onerror = null;
+    
+    // Clear the image source
+    DOM.generatedImage.src = '';
+    
+    // Hide the design container
+    DOM.designWrapper.classList.add('hidden');
+    
+    // Hide the BUY NOW button
+    if (DOM.buyNowBtn) {
+        DOM.buyNowBtn.classList.add('hidden');
+    }
+    
+    // Reset transform
+    DOM.designWrapper.style.transform = 'translate(-50%, -50%)';
 }
 
 function restoreFromHistory(id) {
